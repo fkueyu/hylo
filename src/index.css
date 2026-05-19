@@ -128,6 +128,7 @@ body {
   gap: 8px;
   position: relative;
   user-select: none;
+  -webkit-app-region: drag;
 }
 
 .app-titlebar.app-titlebar--mac {
@@ -147,6 +148,7 @@ body {
   flex: 0 0 auto;
   position: relative;
   z-index: 1;
+  -webkit-app-region: no-drag;
 }
 
 .app-titlebar__title-group {
@@ -213,17 +215,6 @@ body {
   font-family: var(--font-mono);
   color: var(--color-text-muted);
   white-space: nowrap;
-}
-
-/* 拖拽背景占位区 */
-.app-titlebar__drag-handle {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  -webkit-app-region: drag;
 }
 
 /* ── 工具栏按钮 ──────────────────────────────────────────── */

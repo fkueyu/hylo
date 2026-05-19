@@ -263,7 +263,7 @@ export default function App() {
   return (
     <div className="app" onContextMenu={handleGlobalContextMenu}>
       {/* ── 全局统一标题栏 ── */}
-      <header className={`app-titlebar ${isMac ? "app-titlebar--mac" : ""}`}>
+      <header className={`app-titlebar ${isMac ? "app-titlebar--mac" : ""}`} data-tauri-drag-region>
         <div className="app-titlebar__left">
           <img 
             src="/logo.png" 
@@ -315,7 +315,6 @@ export default function App() {
             {theme === "dark" ? "🌙" : "☀️"}
           </button>
         </div>
-        <div className="app-titlebar__drag-handle" data-tauri-drag-region />
       </header>
 
       {/* ── 主编辑区 ── */}

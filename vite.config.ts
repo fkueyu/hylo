@@ -1,3 +1,18 @@
+import fs from "node:fs";
+
+// 解决老旧依赖在 Node 22+ 下对 fs.rmdirSync { recursive: true } 报错的兼容性问题
+if (fs && fs.rmdirSync) {
+  const originalRmdirSync = fs.rmdirSync;
+  fs.rmdirSync = function (path: any, options: any) {
+    if (options && options.recursive) {
+      if (fs.rmSync) {
+        return fs.rmSync(path, options);
+      }
+    }
+    return originalRmdirSync.call(fs, path, options);
+  } as any;
+}
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import monacoEditorPlugin from "vite-plugin-monaco-editor";
