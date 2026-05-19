@@ -1,0 +1,5 @@
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "link-arg=-Wl,-sectcreate,__TEXT,__info_plist,/Users/pengyu/Project/AINX/Hylo/src-tauri/Info.plist"]
+
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-arg=-Wl,-sectcreate,__TEXT,__info_plist,/Users/pengyu/Project/AINX/Hylo/src-tauri/Info.plist"]

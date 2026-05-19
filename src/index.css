@@ -1,0 +1,670 @@
+/* ============================================================
+   Hylo — Global Styles
+   Design System: Dark shell + Light preview
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+/* ── 设计 Token ──────────────────────────────────────────── */
+:root {
+  /* 颜色 (Apple Native 2026 Dark) */
+  --color-bg:              #1c1c1e;
+  --color-bg-panel:        #1e1e1e;
+  --color-bg-panel-header: #2c2c2e;
+  --color-bg-preview:      #ffffff;
+  --color-bg-elevated:     rgba(44, 44, 46, 0.85); /* macOS 悬浮材料暗色毛玻璃底色 */
+  --color-border:          rgba(255, 255, 255, 0.1);
+  --color-divider:         #2c2c2e;
+  --color-divider-hover:   #0a84ff;
+  --color-text-primary:    #ffffff;
+  --color-text-secondary:  #8e8e93;
+  --color-text-muted:      #636366;
+  --color-accent:          #0a84ff;
+  --color-accent-hover:    #409cff;
+  --color-accent-dim:      rgba(10, 132, 255, 0.2);
+  --color-highlight-bg:    rgba(10, 132, 255, 0.2);
+  --color-highlight-border:rgba(10, 132, 255, 0.6);
+  --color-btn-hover:       rgba(255, 255, 255, 0.1);
+  --color-btn-active:      rgba(255, 255, 255, 0.15);
+  --color-shadow-elevated: 0 8px 32px rgba(0,0,0,0.24), 0 2px 8px rgba(0,0,0,0.12);
+
+  /* 字体 */
+  --font-ui:   'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+
+  /* 尺寸 */
+  --titlebar-height: 38px;
+  --divider-width:   5px;
+  --panel-header-h:  36px;
+  --radius-sm:       4px;
+  --radius-md:       6px;
+  --radius-lg:       8px;
+
+  /* 动画 */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+}
+
+/* ── 浅色模式主题覆盖 ────────────────────────────────────── */
+.theme-light {
+  --color-bg:              #f2f2f7;
+  --color-bg-panel:        #ffffff;
+  --color-bg-panel-header: #f2f2f7;
+  --color-bg-elevated:     rgba(255, 255, 255, 0.85); /* macOS 悬浮材料浅色毛玻璃底色 */
+  --color-border:          rgba(0, 0, 0, 0.1);
+  --color-divider:         #e5e5ea;
+  --color-divider-hover:   #007aff;
+  --color-text-primary:    #000000;
+  --color-text-secondary:  #8e8e93;
+  --color-text-muted:      #aeaeb2;
+  --color-accent:          #007aff;
+  --color-accent-hover:    #005ecb;
+  --color-accent-dim:      rgba(0, 122, 255, 0.15);
+  --color-highlight-bg:    rgba(0, 122, 255, 0.15);
+  --color-highlight-border:rgba(0, 122, 255, 0.6);
+  --color-btn-hover:       rgba(0, 0, 0, 0.05);
+  --color-btn-active:      rgba(0, 0, 0, 0.10);
+  --color-shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* ── Reset ──────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── App 布局 ────────────────────────────────────────────── */
+.app {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.app-main {
+  flex: 1;
+  min-height: 0; /* 关键：防止 flex 子元素撑破父容器 */
+  overflow: hidden;
+}
+
+/* ── 标题栏 ─────────────────────────────────────────────── */
+.app-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--titlebar-height);
+  padding: 0 12px;
+  background: var(--color-bg-panel-header);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  gap: 8px;
+  position: relative;
+  user-select: none;
+}
+
+.app-titlebar.app-titlebar--mac {
+  padding-left: 80px;
+}
+
+.app-titlebar.app-titlebar--mac .app-titlebar__left {
+  transform: translateY(-2.5px);
+}
+
+/* 左区：品牌 */
+.app-titlebar__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.app-titlebar__title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-top: 1px; /* 字体渲染微调：文字整体向下修正 1px，使其与 logo 正中心完美相交 */
+}
+
+.app-titlebar__logo {
+  font-size: 15px;
+  color: var(--color-accent);
+  filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.6));
+  line-height: 1;
+}
+
+.app-titlebar__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.app-titlebar__sep {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1;
+  position: relative;
+  top: 0.5px; /* 斜杠字符在字库中偏高，向下微调 0.5px 达到视觉几何中心 */
+}
+
+.app-titlebar__filename {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* 右区：统计 + 切换器 + 语言 */
+.app-titlebar__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  -webkit-app-region: no-drag;
+  position: relative;
+  z-index: 1;
+}
+
+.app-titlebar__divider {
+  width: 1px;
+  height: 12px;
+  background: var(--color-border);
+  margin: 0 2px;
+}
+
+.app-titlebar__stats {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* 拖拽背景占位区 */
+.app-titlebar__drag-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  -webkit-app-region: drag;
+}
+
+/* ── 工具栏按钮 ──────────────────────────────────────────── */
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  height: 30px;
+  background: var(--color-accent-dim);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: var(--radius-md);
+  color: var(--color-accent-hover);
+  font-size: 12px;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    transform var(--duration-fast) ease;
+  white-space: nowrap;
+  -webkit-app-region: no-drag;
+}
+
+.toolbar-btn:hover {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.55);
+  color: #a5b4fc;
+}
+
+.toolbar-btn:active {
+  transform: scale(0.97);
+}
+
+.toolbar-btn svg {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+/* 幽灵按钮（新建） */
+.toolbar-btn--ghost {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-secondary);
+}
+
+.toolbar-btn--ghost:hover {
+  background: var(--color-btn-hover);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: var(--color-text-primary);
+}
+
+/* 语言切换按钮 */
+.toolbar-btn--lang {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-secondary);
+  padding: 5px 9px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+}
+
+.toolbar-btn--lang:hover {
+  background: var(--color-btn-hover);
+  border-color: rgba(150, 150, 150, 0.2);
+  color: var(--color-text-primary);
+}
+
+/* ── 菜单组件 ───────────────────────────────────────────── */
+.menubar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+}
+
+.menubar-item {
+  position: relative;
+}
+
+.menubar-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+
+.menubar-btn:hover {
+  background: var(--color-btn-hover);
+  color: var(--color-text-primary);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  min-width: 140px;
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* ── 右键菜单 ───────────────────────────────────────────── */
+.context-menu {
+  position: fixed;
+  background: var(--color-bg-elevated);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--color-shadow-elevated);
+  padding: 6px;
+  min-width: 180px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.context-menu-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 4px 0;
+}
+
+/* ── Split View ──────────────────────────────────────────── */
+.split-view {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.split-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.split-panel--left {
+  background: var(--color-bg-panel);
+  flex-shrink: 0;
+}
+
+.split-panel--right {
+  background: var(--color-bg-preview);
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* 分隔线 */
+.split-divider {
+  width: var(--divider-width);
+  flex-shrink: 0;
+  background: var(--color-divider);
+  cursor: col-resize;
+  position: relative;
+  transition: background var(--duration-fast) ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.split-divider__handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 24px;
+  background: var(--color-text-muted);
+  border-radius: 1px;
+  opacity: 0;
+  transition: 
+    opacity var(--duration-fast) var(--ease-out),
+    height var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+}
+
+.split-divider:hover .split-divider__handle {
+  opacity: 1;
+  background: var(--color-divider-hover);
+  height: 36px; /* Hover 时拉长拉细，极具物理动感 */
+}
+
+/* ── Monaco Panel ────────────────────────────────────────── */
+.monaco-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.monaco-panel__header {
+  display: flex;
+  align-items: center;
+  height: var(--panel-header-h);
+  padding: 0 14px;
+  background: var(--color-bg-panel-header);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+}
+
+.monaco-panel__label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.monaco-panel__editor {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Monaco 内自定义高亮装饰 */
+.hylo-source-highlight {
+  background: var(--color-accent-dim) !important;
+  border-radius: 2px;
+}
+
+/* ── Preview Panel ───────────────────────────────────────── */
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg-preview);
+  min-height: 0;
+}
+
+.preview-panel__header {
+  display: flex;
+  align-items: center;
+  height: var(--panel-header-h);
+  padding: 0 14px;
+  background: var(--color-bg-panel-header);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+}
+
+.preview-panel__label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.preview-panel__content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.preview-panel__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #aaa;
+  font-size: 14px;
+  font-family: var(--font-ui);
+}
+
+/* AST Renderer 根容器 */
+.ast-renderer {
+  min-height: 100%;
+}
+
+/* ── 预览高亮 ────────────────────────────────────────────── */
+.hylo-preview-highlight {
+  background: var(--color-highlight-bg) !important;
+  outline: 2px solid var(--color-highlight-border) !important;
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    outline-color var(--duration-fast) var(--ease-out);
+}
+
+/* 可点击区域的悬停提示 */
+.preview-panel__content [data-hylo-id]:hover {
+  cursor: pointer;
+  outline: 1px dashed rgba(99, 102, 241, 0.3);
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
+}
+
+/* 高亮元素优先级高于 hover */
+.preview-panel__content .hylo-preview-highlight:hover {
+  outline: 2px solid var(--color-highlight-border) !important;
+}
+
+/* ── 滚动条美化 ──────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* 预览区滚动条 */
+.preview-panel__content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.preview-panel__content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.22);
+}
+
+/* ── 分栏切换器 (Layout Switcher) ────────────────────────── */
+.layout-switcher {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 2px;
+  align-items: center;
+}
+
+:root.theme-light .layout-switcher {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.layout-switcher__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.layout-switcher__btn:hover {
+  color: var(--color-text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+:root.theme-light .layout-switcher__btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.layout-switcher__btn.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-accent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+:root.theme-light .layout-switcher__btn.active {
+  background: #ffffff;
+  color: var(--color-accent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* 统计字样 */
+.app-titlebar__stats {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-family: var(--font-ui);
+  opacity: 0.85;
+}
+
+/* ── Monaco 滚动条重塑 ────────────────────────────────────── */
+.monaco-editor .scrollbar {
+  background: transparent !important;
+}
+
+.monaco-editor .scrollbar .slider {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-radius: 3px !important;
+  transition: background var(--duration-fast) ease !important;
+}
+
+.monaco-editor .scrollbar .slider:hover,
+.monaco-editor .scrollbar .slider:active {
+  background: rgba(255, 255, 255, 0.22) !important;
+}
+
+/* 浅色模式适配 */
+:root.theme-light .monaco-editor .scrollbar .slider {
+  background: rgba(0, 0, 0, 0.12) !important;
+}
+
+:root.theme-light .monaco-editor .scrollbar .slider:hover,
+:root.theme-light .monaco-editor .scrollbar .slider:active {
+  background: rgba(0, 0, 0, 0.22) !important;
+}
+
+
+
