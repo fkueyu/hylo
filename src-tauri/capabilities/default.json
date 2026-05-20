@@ -13,7 +13,7 @@
     "fs:allow-read-dir",
     "core:window:allow-start-dragging",
     "updater:default",
-    "process:allow-relaunch"
+    "process:allow-restart"
   ]
 }
 
