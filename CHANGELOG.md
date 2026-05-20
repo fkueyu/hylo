@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2026-05-20
+
+### Fixed
+- 修复了桌面端预览区域内容文字紧贴边缘的问题，通过添加统一的内边距使显示效果与 VS Code 插件版保持一致。
+
 ## [0.1.2] - 2026-05-20
 
 ### Added
