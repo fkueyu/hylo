@@ -1,0 +1,15 @@
+{
+  "bundle": {
+    "macOS": {
+      "entitlements": "./entitlements.plist",
+      "files": {
+        "embedded.provisionprofile": "./embedded.provisionprofile"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "active": false
+    }
+  }
+}

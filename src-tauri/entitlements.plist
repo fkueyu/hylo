@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- 启用 Mac App Store 强制要求的沙盒模式 -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+    <!-- 允许应用对外建立网络连接（用于检查更新或加载网络资源） -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <!-- 允许用户通过系统文件对话框读写任意本地文件（编辑器核心功能） -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+</dict>
+</plist>

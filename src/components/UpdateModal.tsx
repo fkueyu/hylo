@@ -58,6 +58,7 @@ export const UpdateModal = forwardRef<UpdateModalRef, UpdateModalProps>(({ local
 
   // 启动自动检测更新 (静默检查)
   useEffect(() => {
+    if (import.meta.env.VITE_APP_STORE === "true") return;
     const timer = setTimeout(() => {
       checkUpdates(false);
     }, 4000); // 启动 4 秒后静默请求

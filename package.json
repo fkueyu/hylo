@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:mas": "tsc && VITE_APP_STORE=true vite build && tauri build --config src-tauri/tauri.appstore.conf.json --bundles app",
     "preview": "vite preview",
     "tauri": "tauri"
   },

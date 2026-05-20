@@ -438,13 +438,15 @@ export default function App() {
                 closeGlobalContextMenu();
               },
             },
-            {
-              label: t(locale, "updateTitle"),
-              onClick: () => {
-                updateModalRef.current?.checkUpdates(true);
-                closeGlobalContextMenu();
-              },
-            },
+            ...(import.meta.env.VITE_APP_STORE !== "true" ? [
+              {
+                label: t(locale, "updateTitle"),
+                onClick: () => {
+                  updateModalRef.current?.checkUpdates(true);
+                  closeGlobalContextMenu();
+                },
+              }
+            ] : []),
           ]}
         />
       )}
