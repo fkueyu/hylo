@@ -69,8 +69,7 @@ function renderNode(
       const isVoid = VOID_ELEMENTS.has(tag);
 
       // parse5 会自动补全 html/head/body 骨架节点。
-      // html 和 head 在 React 里直接渲染会有很多副作用，透传子节点。
-      // 但 body 必须渲染，否则用户在 <style> 中写的 body { ... } 样式会全部失效（如边距、背景色）
+      // html 和 head 在 React 19 里直接渲染会有很多副作用，透传子节点。
       const TRANSPARENT_TAGS = new Set(["html", "head"]);
       if (TRANSPARENT_TAGS.has(tag)) {
         return (
@@ -112,21 +111,34 @@ function renderNode(
           .join(" ") || undefined,
       };
 
+      if (tag === "body") {
+        props["data-hylo-body"] = "true";
+      }
+
+      const renderTag = tag === "body" ? "div" : tag;
+
       // Void 元素没有子节点
       if (isVoid) {
-        return React.createElement(tag, props);
+        return React.createElement(renderTag, props);
+      }
+
+      // style 标签特殊处理：重写 body 选择器以匹配我们的代理 div
+      if (tag === "style" && node.children?.length === 1 && node.children[0].type === "text") {
+        const cssText = node.children[0].textContent || "";
+        const rewritten = cssText.replace(/(^|[\s}>,])body(?=[\s{>,.:#\[]|$)/gi, "$1div[data-hylo-body]");
+        return React.createElement(renderTag, props, rewritten);
       }
 
       // script 标签不渲染实际内容
       if (skipContent) {
-        return React.createElement(tag, props);
+        return React.createElement(renderTag, props);
       }
 
       const children = node.children?.map((child, i) =>
         renderNode(child, highlightedNodeId, i)
       );
 
-      return React.createElement(tag, props, ...(children ?? []));
+      return React.createElement(renderTag, props, ...(children ?? []));
     }
 
     default:
