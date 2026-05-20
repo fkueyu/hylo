@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.7] - 2026-05-20
+
+### Fixed
+- 修复了在 GitHub Actions 中下载 Draft Release 资产时出现的 404 错误。我们从第三方下载插件切换为了使用官方预装的 GitHub CLI `gh release download`，以完全支持从草稿发布包中拉取并合并自动更新配置。
+
 ## [0.1.6] - 2026-05-20
 
 ### Fixed

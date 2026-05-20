@@ -90,12 +90,11 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Download release assets
-        uses: robinraju/release-downloader@v1
-        with:
-          tag: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'latest' }}
-          fileName: "*"
-          out-file-path: "release-assets"
-          token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p release-assets
+          gh release download ${{ github.ref_name }} --dir release-assets --pattern "*"
 
       - name: Generate updater.json
         env:
