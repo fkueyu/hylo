@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.5] - 2026-05-20
+
+### Fixed
+- 紧急修复了桌面端 v0.1.4 版本中因直接渲染 `<body>` 标签导致的 React 19 崩溃白屏问题。
+
 ## [0.1.4] - 2026-05-20
 
 ### Fixed
