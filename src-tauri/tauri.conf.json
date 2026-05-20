@@ -40,6 +40,9 @@
     "macOS": {
       "infoPlist": "Info.plist"
     },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
     "updater": {
       "active": true,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI4RDg2M0VGRDhEN0Q3MUMKUldRYzE5Zlk3MlBZS0ZsSU03Q1hBYVJNNldaNGpEek1LMjVXcm9rUUU0b1BiS1V2T1BrTnRuTlMK",
