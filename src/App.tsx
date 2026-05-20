@@ -53,6 +53,8 @@ const INITIAL_HTML = `<!DOCTYPE html>
     ul { padding-left: 1.5rem; }
     li { margin: 0.4rem 0; color: #444; }
     .tag { color: #6366f1; font-weight: 500; }
+    a { color: #007aff; text-decoration: none; border-bottom: 1px solid transparent; transition: all 0.2s; }
+    a:hover { border-bottom-color: #007aff; }
   </style>
 </head>
 <body>
@@ -88,6 +90,13 @@ const INITIAL_HTML = `<!DOCTYPE html>
     无 <code>iframe</code>，无 <code>innerHTML</code>——
     只有带稳定节点标识符的干净 React 渲染树。
   </p>
+
+  <h2>获取更多</h2>
+  <ul>
+    <li>官网：<a href="https://ainx.ink/hylo/" target="_blank">ainx.ink/hylo/</a></li>
+    <li>VS Code 插件：<a href="https://marketplace.visualstudio.com/items?itemName=AINX.hylo-html-preview" target="_blank">在插件市场获取</a></li>
+    <li>GitHub 源码：<a href="https://github.com/fkueyu/hylo" target="_blank">fkueyu/hylo</a></li>
+  </ul>
 
 </body>
 </html>`;

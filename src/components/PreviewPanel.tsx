@@ -137,7 +137,6 @@ export function PreviewPanel({
                   display: block;
                   height: 100%;
                   overflow: auto;
-                  padding: 16px;
                   /* 阻断宿主的暗色模式文本颜色继承，恢复浏览器默认的黑底白字阅读体验 */
                   color: #000000;
                   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;

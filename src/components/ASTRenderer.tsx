@@ -69,8 +69,9 @@ function renderNode(
       const isVoid = VOID_ELEMENTS.has(tag);
 
       // parse5 会自动补全 html/head/body 骨架节点。
-      // 在 React div 内直接渲染这些标签会导致浏览器 DOM 自动纠错，必须透传子节点。
-      const TRANSPARENT_TAGS = new Set(["html", "head", "body"]);
+      // html 和 head 在 React 里直接渲染会有很多副作用，透传子节点。
+      // 但 body 必须渲染，否则用户在 <style> 中写的 body { ... } 样式会全部失效（如边距、背景色）
+      const TRANSPARENT_TAGS = new Set(["html", "head"]);
       if (TRANSPARENT_TAGS.has(tag)) {
         return (
           <React.Fragment key={`${node.nodeId}-${index}`}>

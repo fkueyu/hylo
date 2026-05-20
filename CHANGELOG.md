@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2026-05-20
+
+### Fixed
+- 修复了预览时 `<body>` 标签的 CSS 样式（如 padding 和 margin）失效的问题。
+- 完善了初始欢迎文档，添加了相关官网和源码链接。
+
 ## [0.1.3] - 2026-05-20
 
 ### Fixed
