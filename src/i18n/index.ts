@@ -57,6 +57,20 @@ export const translations = {
     confirmOpenFileDesc: "当前文件有未保存的修改，打开其他文件将丢失这些更改。是否继续？",
     confirmOk: "确定",
     confirmCancel: "取消",
+
+    // 更新相关
+    updateTitle: "软件更新",
+    updateFound: "发现新版本可用！",
+    updateCurrent: "当前版本",
+    updateLatest: "最新版本",
+    updateBtnNow: "立即更新",
+    updateBtnLater: "以后再说",
+    updateDownloading: "正在下载并安装更新包...",
+    updateSuccess: "更新下载安装成功，应用将立即重启以应用更新！",
+    updateError: "更新失败",
+    updateChecking: "正在检查更新，请稍候...",
+    updateAlreadyLatest: "您当前已是最新版本，无需更新！",
+    updateClose: "关闭",
   },
   en: {
     appName: "Hylo",
@@ -103,6 +117,20 @@ export const translations = {
     confirmOpenFileDesc: "You have unsaved changes. Opening another file will discard these changes. Continue?",
     confirmOk: "OK",
     confirmCancel: "Cancel",
+
+    // Update related
+    updateTitle: "Software Update",
+    updateFound: "A new version is available!",
+    updateCurrent: "Current Version",
+    updateLatest: "Latest Version",
+    updateBtnNow: "Update Now",
+    updateBtnLater: "Later",
+    updateDownloading: "Downloading and installing update...",
+    updateSuccess: "Update installed successfully, relaunching application...",
+    updateError: "Update Failed",
+    updateChecking: "Checking for updates, please wait...",
+    updateAlreadyLatest: "You are already using the latest version!",
+    updateClose: "Close",
   },
 } as const;
 

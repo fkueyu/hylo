@@ -2,7 +2,7 @@
 // App.tsx — Hylo 根组件（含文件打开、双语、全屏布局）
 // ============================================================
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { SplitView } from "@/components/SplitView";
 import { MonacoPanel } from "@/components/MonacoPanel";
 import { PreviewPanel } from "@/components/PreviewPanel";
@@ -15,6 +15,7 @@ import { listen } from "@tauri-apps/api/event";
 import { ask } from "@tauri-apps/plugin-dialog";
 import type { Locale } from "@/i18n";
 import { t } from "@/i18n";
+import { UpdateModal } from "@/components/UpdateModal";
 
 // ── 内置示例文档 ─────────────────────────────────────────────
 const INITIAL_HTML = `<!DOCTYPE html>
@@ -97,6 +98,8 @@ export default function App() {
   const [layout, setLayout] = useState<"both" | "editor" | "preview">("both");
   const [filename, setFilename] = useState<string | null>(null);
   const [filepath, setFilepath] = useState<string | null>(null);
+
+  const updateModalRef = useRef<any>(null);
 
   const isMac = typeof window !== "undefined" && navigator.userAgent.includes("Mac");
 
@@ -426,9 +429,17 @@ export default function App() {
                 closeGlobalContextMenu();
               },
             },
+            {
+              label: t(locale, "updateTitle"),
+              onClick: () => {
+                updateModalRef.current?.checkUpdates(true);
+                closeGlobalContextMenu();
+              },
+            },
           ]}
         />
       )}
+      <UpdateModal ref={updateModalRef} locale={locale} />
     </div>
   );
 }

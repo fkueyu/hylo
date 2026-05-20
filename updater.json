@@ -1,0 +1,23 @@
+{
+  "version": "0.1.2",
+  "notes": "软件更新说明：\n1. 修复了一些已知问题。\n2. 提升了软件的稳定性和响应速度。",
+  "pub_date": "2026-05-20T00:00:00Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "PLACEHOLDER_MAC_ARM_SIGNATURE",
+      "url": "https://ainx.ink/hylo/downloads/v0.1.2/Hylo_0.1.2_universal.dmg"
+    },
+    "darwin-x86_64": {
+      "signature": "PLACEHOLDER_MAC_INTEL_SIGNATURE",
+      "url": "https://ainx.ink/hylo/downloads/v0.1.2/Hylo_0.1.2_universal.dmg"
+    },
+    "linux-x86_64": {
+      "signature": "PLACEHOLDER_LINUX_SIGNATURE",
+      "url": "https://ainx.ink/hylo/downloads/v0.1.2/hylo_0.1.2_amd64.AppImage"
+    },
+    "windows-x86_64": {
+      "signature": "PLACEHOLDER_WIN_SIGNATURE",
+      "url": "https://ainx.ink/hylo/downloads/v0.1.2/Hylo_0.1.2_x64_en-US.msi"
+    }
+  }
+}
