@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.6] - 2026-05-20
+
+### Fixed
+- 修复了因为代码未提交导致打包构建的 v0.1.5 版本依然存在 React 19 崩溃白屏的问题，此版本将修复代码打包并完成了自动更新链路的测试。
+
 ## [0.1.5] - 2026-05-20
 
 ### Fixed
