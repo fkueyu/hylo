@@ -14,9 +14,11 @@ fn update_menu(app: AppHandle, locale: String) -> Result<(), String> {
     
     let new_text = if is_zh { "新建" } else { "New" };
     let open_text = if is_zh { "打开文件..." } else { "Open File..." };
+    let history_text = if is_zh { "打开历史..." } else { "Open History..." };
     let save_text = if is_zh { "保存" } else { "Save" };
     let theme_text = if is_zh { "切换深色/浅色模式" } else { "Toggle Theme" };
     let lang_text = if is_zh { "Switch to English / 切换到英文" } else { "切换到中文 / Switch to Chinese" };
+    let about_text = if is_zh { "关于 Hylo" } else { "About Hylo" };
     
     let copy_text = if is_zh { "复制" } else { "Copy" };
     let paste_text = if is_zh { "粘贴" } else { "Paste" };
@@ -40,22 +42,24 @@ fn update_menu(app: AppHandle, locale: String) -> Result<(), String> {
     // 创建自定义业务菜单项
     let new_i = MenuItem::with_id(&app, "new-file", new_text, true, Some("CmdOrCtrl+N")).map_err(|e| e.to_string())?;
     let open_i = MenuItem::with_id(&app, "open-file", open_text, true, Some("CmdOrCtrl+O")).map_err(|e| e.to_string())?;
+    let history_i = MenuItem::with_id(&app, "open-history", history_text, true, Some("CmdOrCtrl+Shift+H")).map_err(|e| e.to_string())?;
     let save_i = MenuItem::with_id(&app, "save-file", save_text, true, Some("CmdOrCtrl+S")).map_err(|e| e.to_string())?;
     let theme_i = MenuItem::with_id(&app, "toggle-theme", theme_text, true, Some("CmdOrCtrl+T")).map_err(|e| e.to_string())?;
     let lang_i = MenuItem::with_id(&app, "toggle-lang", lang_text, true, Some("CmdOrCtrl+L")).map_err(|e| e.to_string())?;
+    let about_i = MenuItem::with_id(&app, "about-app", about_text, true, None::<&str>).map_err(|e| e.to_string())?;
 
     let app_submenu = Submenu::with_items(
         &app,
         app_name,
         true,
-        &[&quit_i],
+        &[&about_i, &sep, &quit_i],
     ).map_err(|e| e.to_string())?;
 
     let file_submenu = Submenu::with_items(
         &app,
         file_text,
         true,
-        &[&new_i, &open_i, &save_i],
+        &[&new_i, &open_i, &history_i, &sep, &save_i],
     ).map_err(|e| e.to_string())?;
 
     let edit_submenu = Submenu::with_items(

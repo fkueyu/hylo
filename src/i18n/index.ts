@@ -71,6 +71,17 @@ export const translations = {
     updateChecking: "正在检查更新，请稍候...",
     updateAlreadyLatest: "您当前已是最新版本，无需更新！",
     updateClose: "关闭",
+
+    // 历史记录相关
+    historyTitle: "打开历史",
+    historyEmpty: "暂无打开的历史记录",
+    historyClear: "清空历史",
+    fileNotExistTitle: "文件已不存在",
+    fileNotExistDesc: "该文件可能已被移动或删除，是否从历史记录中移除？",
+
+    // 关于页面相关
+    aboutSlogan: "HTML 的 Typora — AI 原生可视化编辑器",
+    aboutWebsite: "访问官网",
   },
   en: {
     appName: "Hylo",
@@ -131,6 +142,17 @@ export const translations = {
     updateChecking: "Checking for updates, please wait...",
     updateAlreadyLatest: "You are already using the latest version!",
     updateClose: "Close",
+
+    // History related
+    historyTitle: "Open Recent",
+    historyEmpty: "No recent files",
+    historyClear: "Clear History",
+    fileNotExistTitle: "File Not Found",
+    fileNotExistDesc: "This file may have been moved or deleted. Remove from history?",
+
+    // About related
+    aboutSlogan: "Typora for HTML — AI Native Visual Editor",
+    aboutWebsite: "Visit Website",
   },
 } as const;
 

@@ -16,6 +16,9 @@ import { ask } from "@tauri-apps/plugin-dialog";
 import type { Locale } from "@/i18n";
 import { t } from "@/i18n";
 import { UpdateModal } from "@/components/UpdateModal";
+import { HistoryModal } from "@/components/HistoryModal";
+import { AboutModal } from "@/components/AboutModal";
+import { useHistory } from "@/hooks/useHistory";
 
 // ── 内置示例文档 ─────────────────────────────────────────────
 const INITIAL_HTML = `<!DOCTYPE html>
@@ -107,12 +110,15 @@ export default function App() {
   const [layout, setLayout] = useState<"both" | "editor" | "preview">("both");
   const [filename, setFilename] = useState<string | null>(null);
   const [filepath, setFilepath] = useState<string | null>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   const updateModalRef = useRef<any>(null);
 
   const isMac = typeof window !== "undefined" && navigator.userAgent.includes("Mac");
 
   const editor = useEditor(INITIAL_HTML);
+  const { history, addHistory, clearHistory, removeHistory } = useHistory();
 
   // 文件加载回调
   const handleFileLoaded = useCallback(
@@ -120,8 +126,9 @@ export default function App() {
       editor.loadContent(content);
       setFilename(name);
       setFilepath(path);
+      addHistory(path, name);
     },
-    [editor]
+    [editor, addHistory]
   );
 
   // 文件保存回调
@@ -130,8 +137,9 @@ export default function App() {
       setFilename(name);
       setFilepath(path);
       editor.markClean();
+      addHistory(path, name);
     },
-    [editor]
+    [editor, addHistory]
   );
 
   const { openFile } = useFileOpen({
@@ -246,6 +254,9 @@ export default function App() {
         case "open-file":
           handleOpenFile();
           break;
+        case "open-history":
+          setIsHistoryOpen(true);
+          break;
         case "save-file":
           saveFile(editor.getContent(), filepath);
           break;
@@ -255,13 +266,16 @@ export default function App() {
         case "toggle-lang":
           toggleLocale();
           break;
+        case "about-app":
+          setIsAboutOpen(true);
+          break;
       }
     });
     return () => {
       unlisten.then((fn) => fn());
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editor, saveFile, filepath, handleNewFile, handleOpenFile]);
+  }, [editor, saveFile, filepath, handleNewFile, handleOpenFile, setIsHistoryOpen, setIsAboutOpen]);
 
   // 处理全局右键点击
   const handleGlobalContextMenu = useCallback(
@@ -451,6 +465,20 @@ export default function App() {
         />
       )}
       <UpdateModal ref={updateModalRef} locale={locale} />
+      <HistoryModal
+        isOpen={isHistoryOpen}
+        locale={locale}
+        history={history}
+        onClose={() => setIsHistoryOpen(false)}
+        onFileLoaded={handleFileLoaded}
+        onClear={clearHistory}
+        onRemove={removeHistory}
+      />
+      <AboutModal
+        isOpen={isAboutOpen}
+        locale={locale}
+        onClose={() => setIsAboutOpen(false)}
+      />
     </div>
   );
 }
