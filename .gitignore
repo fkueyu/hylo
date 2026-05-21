@@ -25,3 +25,6 @@ dist-ssr
 
 # App Store Guide
 docs/APP_STORE_GUIDE.md
+
+# Deploy Guide
+DEPLOY_GUIDE.md
