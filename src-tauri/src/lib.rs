@@ -48,13 +48,24 @@ fn update_menu(app: AppHandle, locale: String) -> Result<(), String> {
     let theme_i = MenuItem::with_id(&app, "toggle-theme", theme_text, true, Some("CmdOrCtrl+T")).map_err(|e| e.to_string())?;
     let lang_i = MenuItem::with_id(&app, "toggle-lang", lang_text, true, Some("CmdOrCtrl+L")).map_err(|e| e.to_string())?;
     let about_i = MenuItem::with_id(&app, "about-app", about_text, true, None::<&str>).map_err(|e| e.to_string())?;
+
+    #[cfg(not(feature = "appstore"))]
     let check_updates_i = MenuItem::with_id(&app, "check-updates", check_updates_text, true, None::<&str>).map_err(|e| e.to_string())?;
 
+    #[cfg(not(feature = "appstore"))]
     let app_submenu = Submenu::with_items(
         &app,
         app_name,
         true,
         &[&about_i, &check_updates_i, &sep, &quit_i],
+    ).map_err(|e| e.to_string())?;
+
+    #[cfg(feature = "appstore")]
+    let app_submenu = Submenu::with_items(
+        &app,
+        app_name,
+        true,
+        &[&about_i, &sep, &quit_i],
     ).map_err(|e| e.to_string())?;
 
     let file_submenu = Submenu::with_items(
@@ -87,11 +98,17 @@ fn update_menu(app: AppHandle, locale: String) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_fs::init());
+
+    #[cfg(not(feature = "appstore"))]
+    {
+        builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+    }
+
+    builder
         .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![update_menu])
         .setup(|app| {
