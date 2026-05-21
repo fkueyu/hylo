@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# App Store Guide
+docs/APP_STORE_GUIDE.md
