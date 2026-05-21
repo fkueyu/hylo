@@ -269,13 +269,16 @@ export default function App() {
         case "about-app":
           setIsAboutOpen(true);
           break;
+        case "check-updates":
+          updateModalRef.current?.checkUpdates(true);
+          break;
       }
     });
     return () => {
       unlisten.then((fn) => fn());
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editor, saveFile, filepath, handleNewFile, handleOpenFile, setIsHistoryOpen, setIsAboutOpen]);
+  }, [editor, saveFile, filepath, handleNewFile, handleOpenFile, setIsHistoryOpen, setIsAboutOpen, updateModalRef]);
 
   // 处理全局右键点击
   const handleGlobalContextMenu = useCallback(

@@ -19,6 +19,7 @@ fn update_menu(app: AppHandle, locale: String) -> Result<(), String> {
     let theme_text = if is_zh { "切换深色/浅色模式" } else { "Toggle Theme" };
     let lang_text = if is_zh { "Switch to English / 切换到英文" } else { "切换到中文 / Switch to Chinese" };
     let about_text = if is_zh { "关于 Hylo" } else { "About Hylo" };
+    let check_updates_text = if is_zh { "检查更新..." } else { "Check for Updates..." };
     
     let copy_text = if is_zh { "复制" } else { "Copy" };
     let paste_text = if is_zh { "粘贴" } else { "Paste" };
@@ -47,12 +48,13 @@ fn update_menu(app: AppHandle, locale: String) -> Result<(), String> {
     let theme_i = MenuItem::with_id(&app, "toggle-theme", theme_text, true, Some("CmdOrCtrl+T")).map_err(|e| e.to_string())?;
     let lang_i = MenuItem::with_id(&app, "toggle-lang", lang_text, true, Some("CmdOrCtrl+L")).map_err(|e| e.to_string())?;
     let about_i = MenuItem::with_id(&app, "about-app", about_text, true, None::<&str>).map_err(|e| e.to_string())?;
+    let check_updates_i = MenuItem::with_id(&app, "check-updates", check_updates_text, true, None::<&str>).map_err(|e| e.to_string())?;
 
     let app_submenu = Submenu::with_items(
         &app,
         app_name,
         true,
-        &[&about_i, &sep, &quit_i],
+        &[&about_i, &check_updates_i, &sep, &quit_i],
     ).map_err(|e| e.to_string())?;
 
     let file_submenu = Submenu::with_items(
