@@ -77,10 +77,10 @@ export const UpdateModal = forwardRef<UpdateModalRef, UpdateModalProps>(({ local
       await updateInstance.downloadAndInstall((event: any) => {
         switch (event.event) {
           case "Started":
-            totalBytes = event.contentLength || 0;
+            totalBytes = event.data?.contentLength || 0;
             break;
           case "Progress":
-            downloadedBytes += event.chunkLength;
+            downloadedBytes += event.data?.chunkLength || 0;
             if (totalBytes > 0) {
               const pct = Math.round((downloadedBytes / totalBytes) * 100);
               setProgress(pct);
