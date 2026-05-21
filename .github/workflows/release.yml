@@ -99,7 +99,7 @@ jobs:
       - name: Generate updater.json
         env:
           VERSION: ${{ steps.get_version.outputs.VERSION }}
-        run: node .github/workflows/generate-updater.js
+        run: node .github/workflows/generate-updater.cjs
 
       - name: Deploy assets to Baota Server via SCP
         uses: appleboy/scp-action@master
