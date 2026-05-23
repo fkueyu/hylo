@@ -104,9 +104,101 @@ const INITIAL_HTML = `<!DOCTYPE html>
 </body>
 </html>`;
 
+const INITIAL_HTML_EN = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Welcome to Hylo</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 32px 40px;
+      line-height: 1.75;
+      color: #1a1a2e;
+      box-sizing: border-box;
+    }
+    h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem; color: #111; }
+    h2 { font-size: 1.15rem; font-weight: 600; margin-top: 2rem; color: #222; }
+    p  { margin: 0.75rem 0; color: #444; }
+    code {
+      background: #f0f0f5;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-size: 0.875em;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    blockquote {
+      border-left: 3px solid #6366f1;
+      margin: 1.25rem 0;
+      padding: 0.75rem 1.25rem;
+      background: #f5f5ff;
+      border-radius: 0 6px 6px 0;
+      color: #555;
+    }
+    ul { padding-left: 1.5rem; }
+    li { margin: 0.4rem 0; color: #444; }
+    .tag { color: #6366f1; font-weight: 500; }
+    a { color: #007aff; text-decoration: none; border-bottom: 1px solid transparent; transition: all 0.2s; }
+    a:hover { border-bottom-color: #007aff; }
+  </style>
+</head>
+<body>
+
+  <h1>Welcome to Hylo ✦</h1>
+
+  <blockquote>
+    <p>Typora for HTML — AI Native Visual Editor</p>
+  </blockquote>
+
+  <p>
+    Hylo eliminates the disconnect between <strong>Source Code</strong> and <strong>Render Preview</strong>,
+    treating HTML as a document format rather than a raw web development artifact.
+  </p>
+
+  <h2>Quick Start</h2>
+  <ul>
+    <li>Click any element in the preview pane on the right → instantly locates and highlights the corresponding source code on the left.</li>
+    <li>Move your cursor in the editor → highlights the corresponding rendered element in the preview.</li>
+    <li>Drag the middle splitter to adjust the widths of the panes.</li>
+    <li>Click "Open File" in the titlebar to load your local HTML files.</li>
+  </ul>
+
+  <h2>Born for the AI Era</h2>
+  <p>
+    Large Language Models increasingly generate direct <code>HTML</code> output.
+    Hylo lets you review, edit, and fine-tune AI-generated documents without touching the raw markup.
+  </p>
+
+  <h2>How It Works</h2>
+  <p>
+    Every rendered element is mapped back to its precise source location using the <code>parse5</code> AST.
+    No <code>iframe</code>, no <code>innerHTML</code> — just a clean React render tree with stable node identifiers.
+  </p>
+
+  <h2>Learn More</h2>
+  <ul>
+    <li>Website: <a href="https://ainx.ink/hylo/" target="_blank">ainx.ink/hylo/</a></li>
+    <li>VS Code Extension: <a href="https://marketplace.visualstudio.com/items?itemName=AINX.hylo-html-preview" target="_blank">Available in VS Code Marketplace</a></li>
+    <li>GitHub Repository: <a href="https://github.com/fkueyu/hylo" target="_blank">fkueyu/hylo</a></li>
+  </ul>
+
+</body>
+</html>`;
+
 export default function App() {
-  const [locale, setLocale] = useState<Locale>("zh");
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [locale, setLocale] = useState<Locale>(() => {
+    if (typeof navigator !== "undefined" && navigator.language) {
+      return navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en";
+    }
+    return "zh";
+  });
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    if (typeof window !== "undefined" && window.matchMedia) {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    return "dark";
+  });
   const [layout, setLayout] = useState<"both" | "editor" | "preview">("both");
   const [filename, setFilename] = useState<string | null>(null);
   const [filepath, setFilepath] = useState<string | null>(null);
@@ -117,7 +209,40 @@ export default function App() {
 
   const isMac = typeof window !== "undefined" && navigator.userAgent.includes("Mac");
 
-  const editor = useEditor(INITIAL_HTML);
+  // 根据当前初始测得的语言加载默认欢迎文档
+  const editor = useEditor(locale === "zh" ? INITIAL_HTML : INITIAL_HTML_EN);
+
+  // 首屏挂载以及 locale 变更时同步通知 Rust 刷新原生菜单栏
+  useEffect(() => {
+    invoke("update_menu", { locale }).catch((err) => {
+      console.error("Failed to update native menu via invoke:", err);
+    });
+  }, [locale]);
+
+  // 根据 theme 的变化自动同步 Body 类名，适配亮暗主题渲染
+  useEffect(() => {
+    if (theme === "light") {
+      document.body.classList.add("theme-light");
+    } else {
+      document.body.classList.remove("theme-light");
+    }
+  }, [theme]);
+
+  const latestRef = useRef<any>({
+    filepath,
+    editor,
+  });
+
+  useEffect(() => {
+    latestRef.current = {
+      filepath,
+      editor,
+      saveFile,
+      handleNewFile,
+      handleOpenFile,
+    };
+  });
+
   const { history, addHistory, clearHistory, removeHistory } = useHistory();
 
   // 文件加载回调
@@ -191,22 +316,10 @@ export default function App() {
   } = useContextMenu();
 
   const toggleLocale = () => {
-    setLocale((prev) => {
-      const next = prev === "zh" ? "en" : "zh";
-      invoke("update_menu", { locale: next }).catch(console.error);
-      return next;
-    });
+    setLocale((prev) => (prev === "zh" ? "en" : "zh"));
   };
   const toggleTheme = () => {
-    setTheme((t) => {
-      const newTheme = t === "dark" ? "light" : "dark";
-      if (newTheme === "light") {
-        document.body.classList.add("theme-light");
-      } else {
-        document.body.classList.remove("theme-light");
-      }
-      return newTheme;
-    });
+    setTheme((t) => (t === "dark" ? "light" : "dark"));
   };
 
   const renderLayoutSwitcher = () => (
@@ -247,18 +360,19 @@ export default function App() {
   // 监听 macOS 原生顶部菜单栏事件
   useEffect(() => {
     const unlisten = listen<string>("native-menu-action", (event) => {
+      const state = latestRef.current;
       switch (event.payload) {
         case "new-file":
-          handleNewFile();
+          state.handleNewFile();
           break;
         case "open-file":
-          handleOpenFile();
+          state.handleOpenFile();
           break;
         case "open-history":
           setIsHistoryOpen(true);
           break;
         case "save-file":
-          saveFile(editor.getContent(), filepath);
+          state.saveFile(state.editor.getContent(), state.filepath);
           break;
         case "toggle-theme":
           toggleTheme();
@@ -277,8 +391,8 @@ export default function App() {
     return () => {
       unlisten.then((fn) => fn());
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editor, saveFile, filepath, handleNewFile, handleOpenFile, setIsHistoryOpen, setIsAboutOpen, updateModalRef]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 处理全局右键点击
   const handleGlobalContextMenu = useCallback(
@@ -295,7 +409,7 @@ export default function App() {
       <header className={`app-titlebar ${isMac ? "app-titlebar--mac" : ""}`} data-tauri-drag-region>
         <div className="app-titlebar__left">
           <img 
-            src="/logo.png" 
+            src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"} 
             alt="Logo" 
             style={{ 
               width: "16px",
@@ -480,6 +594,7 @@ export default function App() {
       <AboutModal
         isOpen={isAboutOpen}
         locale={locale}
+        theme={theme}
         onClose={() => setIsAboutOpen(false)}
       />
     </div>

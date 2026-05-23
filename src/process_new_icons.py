@@ -93,6 +93,8 @@ if __name__ == "__main__":
     
     # 4. App UI logo files (squircle)
     app_public_logo = os.path.join(base_dir, "public", "logo.png")
+    app_public_logo_dark = os.path.join(base_dir, "public", "logo-dark.png")
+    app_public_logo_light = os.path.join(base_dir, "public", "logo-light.png")
     app_root_squircle = os.path.join(base_dir, "logo_squircle.png")
     
     # Process icons
@@ -100,14 +102,16 @@ if __name__ == "__main__":
     make_full_bleed_squircle(dark_src, web_dark_dst)
     make_full_bleed_squircle(light_src, web_light_dst)
     
-    # B. VS Code icon (full-bleed squircle, using the dark icon as requested)
-    make_full_bleed_squircle(dark_src, vscode_dst)
+    # B. VS Code icon (full-bleed squircle, using the light icon)
+    make_full_bleed_squircle(light_src, vscode_dst)
     
-    # C. macOS App Icon Source (with shadow and margins)
-    make_macos_app_icon(dark_src, tauri_src_icon)
+    # C. macOS App Icon Source (with shadow and margins, using the light icon)
+    make_macos_app_icon(light_src, tauri_src_icon)
     
-    # D. App UI logos (full-bleed squircles using dark icon)
-    make_full_bleed_squircle(dark_src, app_public_logo)
-    make_full_bleed_squircle(dark_src, app_root_squircle)
+    # D. App UI logos
+    make_full_bleed_squircle(light_src, app_public_logo)
+    make_full_bleed_squircle(dark_src, app_public_logo_dark)
+    make_full_bleed_squircle(light_src, app_public_logo_light)
+    make_full_bleed_squircle(light_src, app_root_squircle)
     
     print("All icons successfully generated!")

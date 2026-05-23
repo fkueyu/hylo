@@ -10,10 +10,11 @@ import { t, Locale } from "../i18n";
 interface AboutModalProps {
   isOpen: boolean;
   locale: Locale;
+  theme: "dark" | "light";
   onClose: () => void;
 }
 
-export function AboutModal({ isOpen, locale, onClose }: AboutModalProps) {
+export function AboutModal({ isOpen, locale, theme, onClose }: AboutModalProps) {
   const [version, setVersion] = useState("0.1.8");
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export function AboutModal({ isOpen, locale, onClose }: AboutModalProps) {
         <div className="about-modal__content">
           <div className="about-modal__logo-container">
             <img
-              src="/logo.png"
+              src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
               alt="Hylo Logo"
               className="about-modal__logo"
             />

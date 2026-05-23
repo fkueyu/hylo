@@ -112,9 +112,9 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![update_menu])
         .setup(|app| {
-            // 初始化时设置原生菜单为中文
+            // 初始化时设置原生菜单默认为英文，防止非中文系统下首屏出现中文菜单
             let handle = app.handle().clone();
-            let _ = update_menu(handle, "zh".to_string());
+            let _ = update_menu(handle, "en".to_string());
             
             // 监听原生菜单点击事件，并将其转发给前端
             app.on_menu_event(move |app_handle, event| {

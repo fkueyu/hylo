@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <!-- 应用标识符（格式为：TeamID.BundleID），TestFlight 必须 -->
+    <key>com.apple.application-identifier</key>
+    <string>UKK3BUGG85.ink.ainx.hylo.editor.v2</string>
+    <!-- 团队标识符 -->
+    <key>com.apple.developer.team-identifier</key>
+    <string>UKK3BUGG85</string>
     <!-- 启用 Mac App Store 强制要求的沙盒模式 -->
     <key>com.apple.security.app-sandbox</key>
     <true/>

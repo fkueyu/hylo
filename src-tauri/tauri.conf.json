@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Hylo",
-  "version": "0.1.12",
-  "identifier": "com.ainx.hylo.editor.v2",
+  "version": "0.1.14",
+  "identifier": "ink.ainx.hylo.editor.v2",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -38,7 +38,8 @@
       "icons/icon.ico"
     ],
     "macOS": {
-      "infoPlist": "Info.plist"
+      "infoPlist": "Info.plist",
+      "minimumSystemVersion": "12.0"
     },
     "createUpdaterArtifacts": true
   },

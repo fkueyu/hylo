@@ -1,12 +1,12 @@
 {
   "name": "tauri-app",
   "private": true,
-  "version": "0.1.12",
+  "version": "0.1.14",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:mas": "tsc && VITE_APP_STORE=true vite build && tauri build --config src-tauri/tauri.appstore.conf.json --features appstore --bundles app",
+    "build:mas": "tsc && VITE_APP_STORE=true vite build && tauri build --config src-tauri/tauri.appstore.conf.json --features appstore --bundles app && xattr -c src-tauri/embedded.provisionprofile && xattr -cr src-tauri/target/release/bundle/macos/Hylo.app && mkdir -p src-tauri/target/release/bundle/macos/Hylo.app/Contents/Resources/zh.lproj && touch src-tauri/target/release/bundle/macos/Hylo.app/Contents/Resources/zh.lproj/Localizable.strings && mkdir -p src-tauri/target/release/bundle/macos/Hylo.app/Contents/Resources/en.lproj && touch src-tauri/target/release/bundle/macos/Hylo.app/Contents/Resources/en.lproj/Localizable.strings && codesign --force --options runtime --sign \"3rd Party Mac Developer Application: li tan (UKK3BUGG85)\" --entitlements src-tauri/entitlements.plist --identifier \"ink.ainx.hylo.editor.v2\" src-tauri/target/release/bundle/macos/Hylo.app/Contents/MacOS/tauri-app && codesign --force --options runtime --sign \"3rd Party Mac Developer Application: li tan (UKK3BUGG85)\" --entitlements src-tauri/entitlements.plist --identifier \"ink.ainx.hylo.editor.v2\" src-tauri/target/release/bundle/macos/Hylo.app && productbuild --sign \"3rd Party Mac Developer Installer: li tan (UKK3BUGG85)\" --component \"src-tauri/target/release/bundle/macos/Hylo.app\" /Applications \"src-tauri/target/release/bundle/macos/Hylo.pkg\"",
     "preview": "vite preview",
     "tauri": "tauri"
   },

@@ -28,3 +28,9 @@ docs/APP_STORE_GUIDE.md
 
 # Deploy Guide
 DEPLOY_GUIDE.md
+
+# App Store Provisioning Profile
+src-tauri/embedded.provisionprofile
+
+# Antigravity CLI
+.antigravitycli/
