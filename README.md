@@ -5,7 +5,7 @@
 
 ---
 
-[官网 / Official Site](https://ainx.ink/hylo/) | [VS Code 插件 / VS Code Extension](https://marketplace.visualstudio.com/items?itemName=AINX.hylo-html-preview)
+[官网 / Official Site](https://ainx.ink/hylo/) | [Mac App Store](https://apps.apple.com/cn/app/hylo-editor/id6771771702?mt=12) | [Windows 下载 / Windows Releases](https://github.com/fkueyu/hylo/releases) | [VS Code 插件 / VS Code Extension](https://marketplace.visualstudio.com/items?itemName=AINX.hylo-html-preview)
 
 Hylo 是一款双向联动的 HTML 可视化编辑器。无需复杂的服务器配置或外部热更新工具，即可在编写 HTML 文件时实现“源码”与“预览”的无缝双向交互定位：
 
