@@ -2,6 +2,7 @@ import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { t, Locale } from "../i18n";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 export interface UpdateModalRef {
   checkUpdates: (isManual: boolean) => Promise<void>;
@@ -12,6 +13,7 @@ interface UpdateModalProps {
 }
 
 export const UpdateModal = forwardRef<UpdateModalRef, UpdateModalProps>(({ locale }, ref) => {
+  const isMac = typeof window !== "undefined" && navigator.userAgent.includes("Mac");
   const [isOpen, setIsOpen] = useState(false);
   const [status, setStatus] = useState<
     "checking" | "idle" | "available" | "downloading" | "success" | "error" | "already-latest"
@@ -163,6 +165,27 @@ export const UpdateModal = forwardRef<UpdateModalRef, UpdateModalProps>(({ local
                   <span style={{ color: "var(--color-accent)", fontWeight: 600 }}>v{updateInfo.version}</span>
                 </div>
               </div>
+
+              {/* 仅在 Mac 下显示 App Store 迁移提示 */}
+              {isMac && (
+                <div style={{ 
+                  marginTop: "12px", 
+                  padding: "10px 12px", 
+                  backgroundColor: "rgba(0, 200, 150, 0.08)", 
+                  border: "1px solid rgba(0, 200, 150, 0.2)", 
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                  lineHeight: "1.5",
+                  color: "#00b080" 
+                }}>
+                  {locale === "zh" ? (
+                    <>💡 推荐 macOS 用户前往 <strong>Mac App Store</strong> 下载安装全新上架的正版客户端，可支持完整的多语言原生系统菜单并享受更安全稳定的沙盒环境。</>
+                  ) : (
+                    <>💡 We highly recommend macOS users install via the <strong>Mac App Store</strong> to experience the fully localized native menus and a secure sandboxed environment.</>
+                  )}
+                </div>
+              )}
+
               {updateInfo.body && (
                 <div style={{ marginTop: "12px" }}>
                   <div style={{ marginBottom: "6px", fontSize: "11px", fontWeight: 500 }}>RELEASE NOTES:</div>
@@ -195,6 +218,22 @@ export const UpdateModal = forwardRef<UpdateModalRef, UpdateModalProps>(({ local
               <button className="update-modal__btn update-modal__btn--secondary" onClick={handleClose}>
                 {t(locale, "updateBtnLater")}
               </button>
+              {isMac && (
+                <button 
+                  className="update-modal__btn" 
+                  style={{
+                    backgroundColor: "#00c896",
+                    color: "#fff",
+                    border: "none"
+                  }}
+                  onClick={async () => {
+                    await openUrl("https://apps.apple.com/cn/app/hylo-editor/id6771771702?mt=12");
+                    handleClose();
+                  }}
+                >
+                  {locale === "zh" ? "前往 App Store" : "App Store"}
+                </button>
+              )}
               <button className="update-modal__btn update-modal__btn--primary" onClick={handleStartUpdate}>
                 {t(locale, "updateBtnNow")}
               </button>
