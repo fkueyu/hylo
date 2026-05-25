@@ -16,6 +16,7 @@ if (fs && fs.rmdirSync) {
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import monacoEditorPlugin from "vite-plugin-monaco-editor";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 import path from "path";
 
 // @ts-expect-error process is a nodejs global
@@ -25,6 +26,7 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
   plugins: [
     react(),
+    nodePolyfills(),
     (monacoEditorPlugin as unknown as typeof monacoEditorPlugin.default).default({
       languageWorkers: ["html", "css", "json", "typescript"],
     }),

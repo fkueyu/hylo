@@ -162,6 +162,15 @@ export function PreviewPanel({
                 .hylo-preview-highlight:hover {
                   outline: 2px solid rgba(99, 102, 241, 0.55) !important;
                 }
+                @media print {
+                  [data-hylo-id]:hover {
+                    outline: none !important;
+                  }
+                  .hylo-preview-highlight {
+                    background: transparent !important;
+                    outline: none !important;
+                  }
+                }
               `}
             </style>
             {astRoot ? (
@@ -211,6 +220,20 @@ export function PreviewPanel({
               label: t(locale, "saveFile"),
               onClick: () => {
                 onContextMenuAction?.("saveFile");
+                closeContextMenu();
+              },
+            },
+            {
+              label: t(locale, "exportToPDF"),
+              onClick: () => {
+                onContextMenuAction?.("exportPDF");
+                closeContextMenu();
+              },
+            },
+            {
+              label: t(locale, "exportToWord"),
+              onClick: () => {
+                onContextMenuAction?.("exportWord");
                 closeContextMenu();
               },
             },

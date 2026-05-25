@@ -1018,3 +1018,44 @@ body {
   width: 100%;
 }
 
+/* ── 打印样式（PDF 导出） ── */
+@media print {
+  /* 隐藏所有非预览的 UI 元素 */
+  .app-titlebar,
+  .layout-switcher,
+  .split-panel--left,
+  .split-divider,
+  .preview-panel__header,
+  .context-menu,
+  .about-overlay,
+  .history-overlay,
+  .update-overlay,
+  .about-modal,
+  .history-modal,
+  .update-modal {
+    display: none !important;
+  }
+
+  /* 使外部容器布局变为普通流，以便铺满页面并自动分页 */
+  html, body, .app, .app-main, .split-view, .split-panel--right, .preview-panel, .preview-panel__content {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+  }
+
+  /* 打印时预览内容包裹层 */
+  .ast-renderer {
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+}
+
+

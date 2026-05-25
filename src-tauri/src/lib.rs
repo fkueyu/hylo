@@ -16,6 +16,8 @@ fn update_menu(app: AppHandle, locale: String) -> Result<(), String> {
     let open_text = if is_zh { "打开文件..." } else { "Open File..." };
     let history_text = if is_zh { "打开历史..." } else { "Open History..." };
     let save_text = if is_zh { "保存" } else { "Save" };
+    let export_pdf_text = if is_zh { "导出为 PDF..." } else { "Export to PDF..." };
+    let export_word_text = if is_zh { "导出为 Word..." } else { "Export to Word..." };
     let theme_text = if is_zh { "切换深色/浅色模式" } else { "Toggle Theme" };
     let lang_text = if is_zh { "Switch to English / 切换到英文" } else { "切换到中文 / Switch to Chinese" };
     let about_text = if is_zh { "关于 Hylo" } else { "About Hylo" };
@@ -45,6 +47,8 @@ fn update_menu(app: AppHandle, locale: String) -> Result<(), String> {
     let open_i = MenuItem::with_id(&app, "open-file", open_text, true, Some("CmdOrCtrl+O")).map_err(|e| e.to_string())?;
     let history_i = MenuItem::with_id(&app, "open-history", history_text, true, Some("CmdOrCtrl+Shift+H")).map_err(|e| e.to_string())?;
     let save_i = MenuItem::with_id(&app, "save-file", save_text, true, Some("CmdOrCtrl+S")).map_err(|e| e.to_string())?;
+    let export_pdf_i = MenuItem::with_id(&app, "export-pdf", export_pdf_text, true, Some("CmdOrCtrl+Alt+P")).map_err(|e| e.to_string())?;
+    let export_word_i = MenuItem::with_id(&app, "export-word", export_word_text, true, Some("CmdOrCtrl+Shift+W")).map_err(|e| e.to_string())?;
     let theme_i = MenuItem::with_id(&app, "toggle-theme", theme_text, true, Some("CmdOrCtrl+T")).map_err(|e| e.to_string())?;
     let lang_i = MenuItem::with_id(&app, "toggle-lang", lang_text, true, Some("CmdOrCtrl+L")).map_err(|e| e.to_string())?;
     let about_i = MenuItem::with_id(&app, "about-app", about_text, true, None::<&str>).map_err(|e| e.to_string())?;
@@ -72,7 +76,7 @@ fn update_menu(app: AppHandle, locale: String) -> Result<(), String> {
         &app,
         file_text,
         true,
-        &[&new_i, &open_i, &history_i, &sep, &save_i],
+        &[&new_i, &open_i, &history_i, &sep, &save_i, &sep, &export_pdf_i, &export_word_i],
     ).map_err(|e| e.to_string())?;
 
     let edit_submenu = Submenu::with_items(
@@ -96,6 +100,11 @@ fn update_menu(app: AppHandle, locale: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn export_pdf(window: tauri::WebviewWindow) -> Result<(), String> {
+    window.print().map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default()
@@ -110,7 +119,7 @@ pub fn run() {
 
     builder
         .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![update_menu])
+        .invoke_handler(tauri::generate_handler![update_menu, export_pdf])
         .setup(|app| {
             // 初始化时设置原生菜单默认为英文，防止非中文系统下首屏出现中文菜单
             let handle = app.handle().clone();

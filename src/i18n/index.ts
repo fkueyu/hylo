@@ -82,6 +82,16 @@ export const translations = {
     // 关于页面相关
     aboutSlogan: "HTML 的 Typora — AI 原生可视化编辑器",
     aboutWebsite: "访问官网",
+
+    // 导出相关
+    exportPDFSuccess: "已调起系统打印，请选择另存为 PDF",
+    exportPDFFailed: "导出 PDF 失败",
+    exportWordTitle: "导出为 Word",
+    exportWordSuccess: "导出 Word 成功",
+    exportWordFailed: "导出 Word 失败",
+    exportMenu: "导出",
+    exportToPDF: "导出为 PDF",
+    exportToWord: "导出为 Word",
   },
   en: {
     appName: "Hylo",
@@ -153,6 +163,16 @@ export const translations = {
     // About related
     aboutSlogan: "Typora for HTML — AI Native Visual Editor",
     aboutWebsite: "Visit Website",
+
+    // Export related
+    exportPDFSuccess: "System print dialog opened, please choose Save as PDF",
+    exportPDFFailed: "Export PDF failed",
+    exportWordTitle: "Export to Word",
+    exportWordSuccess: "Export to Word successfully",
+    exportWordFailed: "Export to Word failed",
+    exportMenu: "Export",
+    exportToPDF: "Export to PDF",
+    exportToWord: "Export to Word",
   },
 } as const;
 

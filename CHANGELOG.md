@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.15] - 2026-05-25
+
+### Added
+- 新增 PDF 与 Word (.docx) 导出功能。
+- PDF 导出在普通网页环境使用浏览器打印，在 Tauri 桌面端调用原生 Webview 打印管道，高保真还原 CSS 与 Tailwind 样式。
+- Word 导出引入 `html-to-docx` 库，支持在网页端（通过 Blob fallback 下载）与桌面端（通过原生另存为对话框写入文件）将 HTML 骨架转换为标准的 docx 段落与格式。
+- 新增顶部标题栏“导出”下拉菜单及全局/预览面板右键菜单项。
+- 新增 Tauri 原生 macOS/Windows 菜单中“导出为 PDF”和“导出为 Word”菜单项及相应的快捷键。
+
+### Fixed
+- 修复了 Tauri 桌面端调用 `window.print()` 无反应的问题。
+- 修复了因快捷键与 Webview 默认的 `Cmd+P` 冲突导致双重触发、打印对话框死锁卡死的问题，将 PDF 原生菜单快捷键修改为 `Cmd+Alt+P`，并移除冗余的原生 Alert 提示框。
+- 修复了导出 Word 时由于未在 `default.json` 配置文件中声明 `fs:allow-write-file` 权限而导致的 `fs:write_file not allowed` 写入报错。
+
 ## [0.1.8] - 2026-05-21
 
 ### Fixed

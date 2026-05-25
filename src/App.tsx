@@ -12,7 +12,9 @@ import { useFileOpen } from "@/hooks/useFileOpen";
 import { useFileSave } from "@/hooks/useFileSave";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { ask } from "@tauri-apps/plugin-dialog";
+import { ask, message } from "@tauri-apps/plugin-dialog";
+import { DropdownMenu } from "@/components/DropdownMenu";
+import { useFileExport } from "@/hooks/useFileExport";
 import type { Locale } from "@/i18n";
 import { t } from "@/i18n";
 import { UpdateModal } from "@/components/UpdateModal";
@@ -240,6 +242,8 @@ export default function App() {
       saveFile,
       handleNewFile,
       handleOpenFile,
+      exportPDF,
+      exportWord,
     };
   });
 
@@ -277,6 +281,16 @@ export default function App() {
     locale,
     onFileSaved: handleFileSaved,
     onError: (msg) => console.error(msg),
+  });
+
+  const { exportPDF, exportWord } = useFileExport({
+    locale,
+    onError: (msg) => {
+      message(msg, { title: t(locale, "exportWordFailed"), kind: "error" });
+    },
+    onSuccess: (msg) => {
+      message(msg, { title: t(locale, "exportMenu"), kind: "info" });
+    },
   });
 
   // 新建文件处理（清除内容并重置路径，带 isDirty 二次确认）
@@ -374,6 +388,12 @@ export default function App() {
         case "save-file":
           state.saveFile(state.editor.getContent(), state.filepath);
           break;
+        case "export-pdf":
+          state.exportPDF();
+          break;
+        case "export-word":
+          state.exportWord(state.editor.getContent());
+          break;
         case "toggle-theme":
           toggleTheme();
           break;
@@ -449,6 +469,20 @@ export default function App() {
 
           {renderLayoutSwitcher()}
           
+          <DropdownMenu
+            label={t(locale, "exportMenu")}
+            items={[
+              {
+                label: t(locale, "exportToPDF"),
+                onClick: exportPDF,
+              },
+              {
+                label: t(locale, "exportToWord"),
+                onClick: () => exportWord(editor.getContent()),
+              },
+            ]}
+          />
+          
           <button
             className="toolbar-btn toolbar-btn--lang"
             onClick={toggleTheme}
@@ -492,6 +526,12 @@ export default function App() {
                   case "saveFile":
                     saveFile(editor.getContent(), filepath);
                     break;
+                  case "exportPDF":
+                    exportPDF();
+                    break;
+                  case "exportWord":
+                    exportWord(editor.getContent());
+                    break;
                   case "toggleTheme":
                     toggleTheme();
                     break;
@@ -529,6 +569,20 @@ export default function App() {
               label: t(locale, "saveFile"),
               onClick: () => {
                 saveFile(editor.getContent(), filepath);
+                closeGlobalContextMenu();
+              },
+            },
+            {
+              label: t(locale, "exportToPDF"),
+              onClick: () => {
+                exportPDF();
+                closeGlobalContextMenu();
+              },
+            },
+            {
+              label: t(locale, "exportToWord"),
+              onClick: () => {
+                exportWord(editor.getContent());
                 closeGlobalContextMenu();
               },
             },
