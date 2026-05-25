@@ -68,7 +68,7 @@ jobs:
           tagName: v__VERSION__
           releaseName: 'Hylo v__VERSION__'
           releaseBody: 'See the assets below to download and install.'
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           generateReleaseNotes: true
           args: ${{ matrix.args }}
