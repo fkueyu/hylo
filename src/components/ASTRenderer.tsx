@@ -13,7 +13,54 @@ const VOID_ELEMENTS = new Set([
 ]);
 
 // 这些标签的内容在预览中跳过渲染（但保留节点结构）
-const SKIP_CONTENT_TAGS = new Set(["script"]);
+// 这里移除 script，因为我们改用自定义的 DynamicScript 执行
+const SKIP_CONTENT_TAGS = new Set([""]);
+
+function DynamicScript({ node }: { node: HyloNode }) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const doc = containerRef.current?.ownerDocument;
+    if (!doc) return;
+
+    const src = node.attrs?.src;
+    
+    // 如果是外链脚本，通过 src 排重，避免因为 AST 更新导致脚本不断被销毁和重建（这会中断网络请求）
+    if (src) {
+      if (doc.querySelector(`script[src="${src}"]`)) {
+        return;
+      }
+    }
+
+    const innerContent = node.children?.length === 1 && node.children[0].type === "text"
+      ? node.children[0].textContent || ""
+      : "";
+
+    const script = doc.createElement("script");
+    if (node.attrs) {
+      for (const [key, val] of Object.entries(node.attrs)) {
+        script.setAttribute(key, val);
+      }
+    }
+    if (innerContent) {
+      // 使用块级作用域 {} 包裹并用 try-catch 保护，既能避免 const/let 重复声明导致的 SyntaxError，
+      // 又能确保全局赋值（如 tailwind.config = ...）依然能正确作用于全局，同时防止脚本错误阻断预览。
+      script.textContent = `try {\n{\n${innerContent}\n}\n} catch (e) {\n  console.error("Hylo inline script error:", e);\n}`;
+    }
+    
+    doc.head.appendChild(script);
+
+    return () => {
+      // 对于外链脚本，不移除以防浏览器取消正在进行的网络请求，且外链脚本已在上方排重；
+      // 对于内联脚本，执行是同步且瞬时的，在卸载时安全移除可以防止 DOM 树中积累成百上千个历史脚本节点。
+      if (!src) {
+        script.remove();
+      }
+    };
+  }, [node]);
+
+  return <div ref={containerRef} style={{ display: "none" }} data-hylo-id={node.nodeId} />;
+}
 
 // 解析内联 style 字符串为 React style 对象
 function parseStyleString(styleStr: string): React.CSSProperties {
@@ -129,7 +176,11 @@ function renderNode(
         return React.createElement(renderTag, props, rewritten);
       }
 
-      // script 标签不渲染实际内容
+      // script 标签需要实际执行，使用 DynamicScript 组件
+      if (tag === "script") {
+        return <DynamicScript key={`${node.nodeId}-${index}`} node={node} />;
+      }
+
       if (skipContent) {
         return React.createElement(renderTag, props);
       }

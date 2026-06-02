@@ -36,28 +36,26 @@ export function PreviewPanel({
   headerRight,
   onContextMenuAction,
 }: PreviewPanelProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [shadowRoot, setShadowRoot] = useState<ShadowRoot | null>(null);
+  const containerRef = useRef<HTMLIFrameElement>(null);
+  const [iframeDocument, setIframeDocument] = useState<Document | null>(null);
   const { menuData, openContextMenu, closeContextMenu } = useContextMenu();
 
-  // 初始化 Shadow DOM
+  // 初始化 iframe 文档
   useEffect(() => {
-    if (containerRef.current && !shadowRoot) {
-      // 修复 React 18 Strict Mode 导致 DOM 未销毁但重新执行 Effect 的问题
-      if (containerRef.current.shadowRoot) {
-        setShadowRoot(containerRef.current.shadowRoot);
-      } else {
-        const root = containerRef.current.attachShadow({ mode: "open" });
-        setShadowRoot(root);
+    if (containerRef.current && containerRef.current.contentDocument) {
+      const win = containerRef.current.contentWindow as any;
+      if (win) {
+        // 预定义 tailwind 对象，防止内联脚本 tailwind.config = ... 抛出未定义异常
+        win.tailwind = win.tailwind || {};
       }
+      setIframeDocument(containerRef.current.contentDocument);
     }
-  }, [shadowRoot]);
+  }, []);
 
-  // 点击事件代理：从 composedPath 获取 Shadow DOM 内部的真实目标
+  // 点击事件处理
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      const path = e.nativeEvent.composedPath();
-      const target = path[0] as HTMLElement;
+      const target = e.target as HTMLElement;
       if (!target || !target.closest) return;
       
       const nodeEl = target.closest("[data-hylo-id]");
@@ -74,8 +72,7 @@ export function PreviewPanel({
     (e: React.MouseEvent<HTMLDivElement>) => {
       e.preventDefault(); // 必须阻止浏览器默认右键菜单
       e.stopPropagation(); // 阻止冒泡到 document 导致菜单立刻关闭
-      const path = e.nativeEvent.composedPath();
-      const target = path[0] as HTMLElement;
+      const target = e.target as HTMLElement;
       
       // 如果不是元素节点（比如文本节点），取其父元素
       const el = target?.nodeType === 1 ? target : target?.parentElement;
@@ -99,9 +96,9 @@ export function PreviewPanel({
 
   // 当高亮节点变化时，将该节点滚动到可见区域
   useEffect(() => {
-    if (!highlightedNodeId || !shadowRoot) return;
+    if (!highlightedNodeId || !iframeDocument) return;
 
-    const el = shadowRoot.querySelector(
+    const el = iframeDocument.querySelector(
       `[data-hylo-id="${highlightedNodeId}"]`
     ) as HTMLElement | null;
 
@@ -112,7 +109,7 @@ export function PreviewPanel({
         inline: "nearest",
       });
     }
-  }, [highlightedNodeId, shadowRoot]);
+  }, [highlightedNodeId, iframeDocument]);
 
   return (
     <div className="preview-panel">
@@ -122,16 +119,19 @@ export function PreviewPanel({
           {headerRight && <div style={{ marginLeft: "auto" }}>{headerRight}</div>}
         </div>
       )}
-      <div
+      <iframe
         className="preview-panel__content"
         ref={containerRef}
-        onClick={handleClick}
-        onContextMenu={handleContextMenu}
-      >
-        {shadowRoot && createPortal(
-          <>
-            {/* 注入预览专用的高亮样式和滚动条美化 */}
-            <style>
+        style={{ border: 'none', width: '100%', height: '100%', display: 'block', backgroundColor: '#fff' }}
+        onLoad={(e) => {
+          const doc = (e.target as HTMLIFrameElement).contentDocument;
+          if (doc) setIframeDocument(doc);
+        }}
+      />
+      {iframeDocument && createPortal(
+        <div onClick={handleClick} onContextMenu={handleContextMenu} style={{ minHeight: '100%' }}>
+          {/* 注入预览专用的高亮样式和滚动条美化 */}
+          <style>
               {`
                 :host {
                   display: block;
@@ -180,10 +180,9 @@ export function PreviewPanel({
                 <p>{emptyHint}</p>
               </div>
             )}
-          </>,
-          shadowRoot
-        )}
-      </div>
+        </div>,
+        iframeDocument.body
+      )}
 
       {menuData.visible && (
         <ContextMenu

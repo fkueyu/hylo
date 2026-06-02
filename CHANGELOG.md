@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.16] - 2026-06-02
+
+### Added
+- 支持在 Tauri 桌面端重启应用后，自动持久化并恢复已打开的历史文件访问权限（集成 `tauri-plugin-persisted-scope` 插件）。
+
+### Fixed
+- 修复编辑 HTML 触发 AST 更新时，因内联脚本重新执行导致 top-level 变量重复声明而抛出 `SyntaxError` 的问题（将内联脚本执行环境包裹在独立的块级作用域 `{ ... }` 并辅以 `try-catch` 保护，完美解决后半部分 `fade-in` 动画元素渲染丢失的 Bug）。
+- 修复内联脚本随着输入频繁挂载导致的 Iframe Header DOM 节点膨胀问题，在组件卸载时安全移除同步执行完毕的内联脚本节点，确保长久运行的内存健康与流畅度。
+
 ## [0.1.15] - 2026-05-25
 
 ### Added
