@@ -56,6 +56,33 @@ export function PreviewPanel({
     }
   }, []);
 
+  // 动态更新 iframe head 中的 <base> 标签，只在 filepath 真正改变时更新，避免重复渲染和请求抖动
+  useEffect(() => {
+    if (!iframeDocument) return;
+
+    let baseEl = iframeDocument.head.querySelector("base");
+
+    if (!filepath) {
+      if (baseEl) {
+        baseEl.remove();
+      }
+      return;
+    }
+
+    const dirPath = filepath.substring(0, Math.max(filepath.lastIndexOf("/"), filepath.lastIndexOf("\\")));
+    const baseHref = convertFileSrc(dirPath) + "/";
+
+    if (!baseEl) {
+      baseEl = iframeDocument.createElement("base");
+      // 插入为 head 的第一个子元素，确保在任何 stylesheet/script 之前生效
+      iframeDocument.head.insertBefore(baseEl, iframeDocument.head.firstChild);
+    }
+
+    if (baseEl.getAttribute("href") !== baseHref) {
+      baseEl.setAttribute("href", baseHref);
+    }
+  }, [iframeDocument, filepath]);
+
   // 点击事件处理
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -132,10 +159,6 @@ export function PreviewPanel({
           if (doc) setIframeDocument(doc);
         }}
       />
-      {iframeDocument && filepath && createPortal(
-        <base href={convertFileSrc(filepath.substring(0, Math.max(filepath.lastIndexOf("/"), filepath.lastIndexOf("\\")))) + "/"} />,
-        iframeDocument.head
-      )}
       {iframeDocument && createPortal(
         <div onClick={handleClick} onContextMenu={handleContextMenu} style={{ minHeight: '100%' }}>
           {/* 注入预览专用的高亮样式和滚动条美化 */}
