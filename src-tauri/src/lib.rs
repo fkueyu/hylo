@@ -1,6 +1,14 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager, RunEvent};
+use std::sync::Mutex;
+
+struct OpenedFile(Mutex<Option<String>>);
+
+#[tauri::command]
+fn get_opened_file(state: tauri::State<'_, OpenedFile>) -> Option<String> {
+    state.0.lock().unwrap().take()
+}
 
 #[tauri::command]
 fn update_menu(app: AppHandle, locale: String) -> Result<(), String> {
@@ -118,10 +126,20 @@ pub fn run() {
         builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
     }
 
-    builder
+    builder = builder
         .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![update_menu, export_pdf])
+        .manage(OpenedFile(Mutex::new(None)))
+        .invoke_handler(tauri::generate_handler![update_menu, export_pdf, get_opened_file])
         .setup(|app| {
+            let args: Vec<String> = std::env::args().collect();
+            if args.len() > 1 {
+                let path = &args[1];
+                if !path.starts_with("--") {
+                    if let Some(state) = app.try_state::<OpenedFile>() {
+                        *state.0.lock().unwrap() = Some(path.clone());
+                    }
+                }
+            }
             // 初始化时设置原生菜单默认为英文，防止非中文系统下首屏出现中文菜单
             let handle = app.handle().clone();
             let _ = update_menu(handle, "en".to_string());
@@ -134,7 +152,23 @@ pub fn run() {
                 }
             });
             Ok(())
-        })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        });
+
+    let app = builder.build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    app.run(|app_handle, e| {
+        if let RunEvent::Opened { urls } = e {
+            for url in urls {
+                if let Ok(file_path) = url.to_file_path() {
+                    let path_str = file_path.to_string_lossy().to_string();
+                    if let Some(state) = app_handle.try_state::<OpenedFile>() {
+                        *state.0.lock().unwrap() = Some(path_str.clone());
+                    }
+                    let _ = app_handle.emit("open-file-url", path_str);
+                    break;
+                }
+            }
+        }
+    });
 }

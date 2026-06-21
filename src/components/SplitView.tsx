@@ -24,12 +24,14 @@ export function SplitView({
   layoutMode = "both",
 }: SplitViewProps) {
   const [ratio, setRatio] = useState(initialRatio);
+  const [dragging, setDragging] = useState(false);
   const isDragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     isDragging.current = true;
+    setDragging(true);
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
   }, []);
@@ -54,6 +56,7 @@ export function SplitView({
   const handleMouseUp = useCallback(() => {
     if (!isDragging.current) return;
     isDragging.current = false;
+    setDragging(false);
     document.body.style.cursor = "";
     document.body.style.userSelect = "";
   }, []);
@@ -107,7 +110,10 @@ export function SplitView({
       {/* 右侧面板 */}
       <div
         className="split-panel split-panel--right"
-        style={rightStyle}
+        style={{
+          ...rightStyle,
+          pointerEvents: dragging ? "none" : undefined,
+        }}
       >
         {right}
       </div>

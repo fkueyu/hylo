@@ -235,6 +235,8 @@ export default function App() {
     editor,
   });
 
+  const { history, addHistory, clearHistory, removeHistory } = useHistory();
+
   useEffect(() => {
     latestRef.current = {
       filepath,
@@ -244,10 +246,42 @@ export default function App() {
       handleOpenFile,
       exportPDF,
       exportWord,
+      addHistory,
     };
   });
 
-  const { history, addHistory, clearHistory, removeHistory } = useHistory();
+  // 处理冷启动或运行中从系统级 "Open With" 传来的文件
+  useEffect(() => {
+    const handleSystemOpenFile = async (path: string) => {
+      try {
+        const { readTextFile } = await import("@tauri-apps/plugin-fs");
+        const content = await readTextFile(path);
+        const name = path.split(/[/\\]/).pop() ?? t(locale, "untitled");
+        latestRef.current.editor.loadContent(content);
+        setFilename(name);
+        setFilepath(path);
+        latestRef.current.addHistory(path, name);
+      } catch (err) {
+        console.error("Failed to open system file:", err);
+      }
+    };
+
+    const unlistenFileOpen = listen<string>("open-file-url", (event) => {
+      handleSystemOpenFile(event.payload);
+    });
+
+    invoke<string | null>("get_opened_file")
+      .then((path) => {
+        if (path) {
+          handleSystemOpenFile(path);
+        }
+      })
+      .catch(console.error);
+
+    return () => {
+      unlistenFileOpen.then((fn) => fn());
+    };
+  }, [locale]);
 
   // 文件加载回调
   const handleFileLoaded = useCallback(
@@ -517,6 +551,7 @@ export default function App() {
               highlightedNodeId={editor.highlightedPreviewNodeId}
               onNodeClick={editor.handlePreviewClick}
               locale={locale}
+              filepath={filepath}
               emptyHint={t(locale, "emptyHint")}
               onContextMenuAction={(action) => {
                 switch (action) {

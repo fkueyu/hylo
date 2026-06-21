@@ -10,6 +10,7 @@ import { ContextMenu, useContextMenu } from "@/components/ContextMenu";
 import type { HyloNode } from "@/types";
 import { t } from "@/i18n";
 import type { Locale } from "@/i18n";
+import { convertFileSrc } from "@tauri-apps/api/core";
 
 interface PreviewPanelProps {
   astRoot: HyloNode | null;
@@ -24,6 +25,8 @@ interface PreviewPanelProps {
   headerRight?: React.ReactNode;
   /** 右键菜单动作回调 */
   onContextMenuAction?: (actionId: string, nodeId?: string) => void;
+  /** 当前打开的文件路径，用于本地资源相对路径解析 */
+  filepath?: string | null;
 }
 
 export function PreviewPanel({
@@ -35,6 +38,7 @@ export function PreviewPanel({
   emptyHint = "Start typing HTML in the editor…",
   headerRight,
   onContextMenuAction,
+  filepath,
 }: PreviewPanelProps) {
   const containerRef = useRef<HTMLIFrameElement>(null);
   const [iframeDocument, setIframeDocument] = useState<Document | null>(null);
@@ -128,6 +132,10 @@ export function PreviewPanel({
           if (doc) setIframeDocument(doc);
         }}
       />
+      {iframeDocument && filepath && createPortal(
+        <base href={convertFileSrc(filepath.substring(0, Math.max(filepath.lastIndexOf("/"), filepath.lastIndexOf("\\")))) + "/"} />,
+        iframeDocument.head
+      )}
       {iframeDocument && createPortal(
         <div onClick={handleClick} onContextMenu={handleContextMenu} style={{ minHeight: '100%' }}>
           {/* 注入预览专用的高亮样式和滚动条美化 */}

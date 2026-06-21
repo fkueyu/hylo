@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<body>
+<img src="./test.png" id="img" />
+<div id="out" style="font-size: 24px; color: red;"></div>
+<script>
+  setInterval(() => {
+    const img = document.getElementById('img');
+    const out = document.getElementById('out');
+    if (out && img) {
+      out.innerText = "baseURI: " + document.baseURI + "\nimg src: " + img.src + "\nimg naturalWidth: " + img.naturalWidth;
+    }
+  }, 1000);
+</script>
+</body>
+</html>
