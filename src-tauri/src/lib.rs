@@ -157,15 +157,16 @@ pub fn run() {
     let app = builder.build(tauri::generate_context!())
         .expect("error while building tauri application");
 
-    app.run(|app_handle, e| {
-        if let RunEvent::Opened { urls } = e {
+    app.run(|_app_handle, _e| {
+        #[cfg(target_os = "macos")]
+        if let RunEvent::Opened { urls } = _e {
             for url in urls {
                 if let Ok(file_path) = url.to_file_path() {
                     let path_str = file_path.to_string_lossy().to_string();
-                    if let Some(state) = app_handle.try_state::<OpenedFile>() {
+                    if let Some(state) = _app_handle.try_state::<OpenedFile>() {
                         *state.0.lock().unwrap() = Some(path_str.clone());
                     }
-                    let _ = app_handle.emit("open-file-url", path_str);
+                    let _ = _app_handle.emit("open-file-url", path_str);
                     break;
                 }
             }
