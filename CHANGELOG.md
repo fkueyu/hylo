@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.17] - 2026-06-21
+
+### Fixed
+- 修复了在系统文件管理器中右键选择“用 Hylo 打开”时仅打开默认文档的问题。现在可以正确加载目标 `.html` 文件（兼容 macOS Apple Events 以及 Windows/Linux 命令行启动）。
+- 修复了编辑器双栏分割线在向右拖拽鼠标越过 `<iframe>` 预览面板时导致拖拽事件卡死、无法拖回的问题。
+- 修复并优化了预览区相对路径图片的渲染问题。通过开启 Tauri 的 `assetProtocol` 本地资源协议与 `fs` 文件读取权限，动态在 iframe 中添加 `<base>` 标签实现本地图片渲染，且优化了 `<base>` 标签的更新时机，仅在文件路径变化时更新，避免了敲击键盘编辑时发生页面排版闪烁与重新加载。
+
 ## [0.1.16] - 2026-06-02
 
 ### Added
