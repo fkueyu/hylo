@@ -12,6 +12,7 @@ import { useFileOpen } from "@/hooks/useFileOpen";
 import { useFileSave } from "@/hooks/useFileSave";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ask, message } from "@tauri-apps/plugin-dialog";
 import { DropdownMenu } from "@/components/DropdownMenu";
 import { useFileExport } from "@/hooks/useFileExport";
@@ -270,6 +271,18 @@ export default function App() {
       handleSystemOpenFile(event.payload);
     });
 
+    let unlistenDragDrop: (() => void) | undefined;
+    getCurrentWindow().onDragDropEvent((event) => {
+      if (event.payload.type === "drop") {
+        const path = event.payload.paths[0];
+        if (path) {
+          handleSystemOpenFile(path);
+        }
+      }
+    }).then((fn) => {
+      unlistenDragDrop = fn;
+    }).catch(console.error);
+
     invoke<string | null>("get_opened_file")
       .then((path) => {
         if (path) {
@@ -280,6 +293,9 @@ export default function App() {
 
     return () => {
       unlistenFileOpen.then((fn) => fn());
+      if (unlistenDragDrop) {
+        unlistenDragDrop();
+      }
     };
   }, [locale]);
 
@@ -536,7 +552,7 @@ export default function App() {
           layoutMode={layout}
           left={
             <MonacoPanel
-              initialContent={INITIAL_HTML}
+              initialContent={editor.content}
               theme={theme}
               onEditorReady={editor.setMonacoEditor}
               onContentChange={editor.handleContentChange}

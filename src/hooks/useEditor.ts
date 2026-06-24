@@ -32,6 +32,7 @@ export function useEditor(initialContent: string) {
   const syncManagerRef = useRef<SyncManager | null>(null);
   // 直接持有 Monaco editor 实例，用于 loadContent 同步 setValue
   const monacoEditorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
+  const pendingContentRef = useRef<string | null>(null);
   const savedContentRef = useRef(initialContent);
 
   useEffect(() => {
@@ -65,6 +66,10 @@ export function useEditor(initialContent: string) {
   const setMonacoEditor = useCallback(
     (editor: Monaco.editor.IStandaloneCodeEditor) => {
       monacoEditorRef.current = editor;
+      if (pendingContentRef.current !== null) {
+        editor.setValue(pendingContentRef.current);
+        pendingContentRef.current = null;
+      }
     },
     []
   );
@@ -90,6 +95,8 @@ export function useEditor(initialContent: string) {
     // 1. 立即更新 Monaco 编辑器（同步，避免 useEffect 时序问题）
     if (monacoEditorRef.current) {
       monacoEditorRef.current.setValue(newContent);
+    } else {
+      pendingContentRef.current = newContent;
     }
 
     // 2. 更新 React 状态

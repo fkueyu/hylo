@@ -82,7 +82,7 @@ export function MonacoPanel({
       });
 
       // 初始触发一次解析
-      onContentChange?.(initialContent);
+      onContentChange?.(editor.getValue());
     },
     [initialContent, onContentChange, onCursorChange, onEditorReady, openContextMenu]
   );

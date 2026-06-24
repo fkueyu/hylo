@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.18] - 2026-06-24
+
+### Added / 新增
+- Supported dragging and dropping local HTML files directly into the application window to open them. (支持直接将本地文件拖拽到应用窗口内打开。)
+
+### Fixed / 修复
+- Fixed an initialization race condition where system-opened files (via double-click or "Open With") would briefly flash and then be overwritten by the default "Welcome" content. (修复了通过系统双击或右键打开文件时，因组件初始化时序冲突导致目标文件内容在短暂“闪一下”后被默认页内容错误覆盖的问题。)
+
+
 ## [0.1.17] - 2026-06-21
 
 ### Fixed
