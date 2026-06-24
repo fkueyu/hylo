@@ -1,6 +1,8 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
-use tauri::{AppHandle, Emitter, Manager, RunEvent};
+use tauri::{AppHandle, Emitter, Manager};
+#[cfg(target_os = "macos")]
+use tauri::RunEvent;
 use std::sync::Mutex;
 
 struct OpenedFile(Mutex<Option<String>>);
@@ -29,6 +31,7 @@ fn update_menu(app: AppHandle, locale: String) -> Result<(), String> {
     let theme_text = if is_zh { "切换深色/浅色模式" } else { "Toggle Theme" };
     let lang_text = if is_zh { "Switch to English / 切换到英文" } else { "切换到中文 / Switch to Chinese" };
     let about_text = if is_zh { "关于 Hylo" } else { "About Hylo" };
+    #[cfg(not(feature = "appstore"))]
     let check_updates_text = if is_zh { "检查更新..." } else { "Check for Updates..." };
     
     let copy_text = if is_zh { "复制" } else { "Copy" };
