@@ -242,6 +242,8 @@ export default function App() {
     latestRef.current = {
       filepath,
       editor,
+      isDirty: editor.isDirty,
+      locale,
       saveFile,
       saveFileAs,
       handleNewFile,
@@ -252,9 +254,50 @@ export default function App() {
     };
   });
 
+  // Fix 1: 关窗前未保存提醒
+  useEffect(() => {
+    const win = getCurrentWindow();
+    const unlisten = win.onCloseRequested(async (event) => {
+      const { isDirty, locale: loc, saveFile: sf, filepath: fp, editor: ed } = latestRef.current;
+      if (!isDirty) return;
+      event.preventDefault();
+      const { ask: askDialog } = await import("@tauri-apps/plugin-dialog");
+      const choice = await askDialog(
+        loc === "zh"
+          ? "当前文件有未保存的修改，是否在关闭前保存？"
+          : "You have unsaved changes. Save before closing?",
+        {
+          title: loc === "zh" ? "关闭前保存" : "Save Before Close",
+          kind: "warning",
+          okLabel: loc === "zh" ? "保存" : "Save",
+          cancelLabel: loc === "zh" ? "不保存" : "Don't Save",
+        }
+      );
+      if (choice) {
+        await sf(ed.getContent(), fp);
+      }
+      await win.destroy();
+    });
+    return () => { unlisten.then((fn) => fn()); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // 处理冷启动或运行中从系统级 "Open With" 传来的文件
   useEffect(() => {
-    const handleSystemOpenFile = async (path: string) => {
+    const handleSystemOpenFile = async (path: string, fromColdStart = false) => {
+      // Fix 2: 非冷启动模式下，检查 isDirty，防止拖拽/系统打开默默覆盖未保存内容
+      if (!fromColdStart && latestRef.current.isDirty) {
+        const confirm = await ask(
+          t(latestRef.current.locale, "confirmOpenFileDesc"),
+          {
+            title: t(latestRef.current.locale, "confirmOpenFileTitle"),
+            kind: "warning",
+            okLabel: t(latestRef.current.locale, "confirmOk"),
+            cancelLabel: t(latestRef.current.locale, "confirmCancel"),
+          }
+        );
+        if (!confirm) return;
+      }
       try {
         const { readTextFile } = await import("@tauri-apps/plugin-fs");
         const content = await readTextFile(path);
@@ -269,7 +312,7 @@ export default function App() {
     };
 
     const unlistenFileOpen = listen<string>("open-file-url", (event) => {
-      handleSystemOpenFile(event.payload);
+      handleSystemOpenFile(event.payload, false);
     });
 
     let unlistenDragDrop: (() => void) | undefined;
@@ -277,17 +320,18 @@ export default function App() {
       if (event.payload.type === "drop") {
         const path = event.payload.paths[0];
         if (path) {
-          handleSystemOpenFile(path);
+          handleSystemOpenFile(path, false);
         }
       }
     }).then((fn) => {
       unlistenDragDrop = fn;
     }).catch(console.error);
 
+    // 冷启动时直接加载，无需 isDirty 检查
     invoke<string | null>("get_opened_file")
       .then((path) => {
         if (path) {
-          handleSystemOpenFile(path);
+          handleSystemOpenFile(path, true);
         }
       })
       .catch(console.error);
@@ -344,6 +388,19 @@ export default function App() {
     },
   });
 
+  // Fix 3: 新建文件时用最小 HTML 骨架，而不是空字符串
+  const EMPTY_HTML_TEMPLATE = `<!DOCTYPE html>
+<html lang="${locale === 'zh' ? 'zh-CN' : 'en'}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${locale === 'zh' ? '\u65e0\u6807\u9898' : 'Untitled'}</title>
+</head>
+<body>
+  
+</body>
+</html>`;
+
   // 新建文件处理（清除内容并重置路径，带 isDirty 二次确认）
   const handleNewFile = useCallback(async () => {
     if (editor.isDirty) {
@@ -355,10 +412,10 @@ export default function App() {
       });
       if (!confirm) return;
     }
-    editor.loadContent(""); // 新建时清空编辑器
+    editor.loadContent(EMPTY_HTML_TEMPLATE);
     setFilename(null);
     setFilepath(null);
-  }, [editor, locale]);
+  }, [editor, locale, EMPTY_HTML_TEMPLATE]);
 
   // 打开文件处理（带 isDirty 二次确认）
   const handleOpenFile = useCallback(async () => {
