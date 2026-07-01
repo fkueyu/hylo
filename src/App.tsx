@@ -243,6 +243,7 @@ export default function App() {
       filepath,
       editor,
       saveFile,
+      saveFileAs,
       handleNewFile,
       handleOpenFile,
       exportPDF,
@@ -327,7 +328,7 @@ export default function App() {
     onError: (msg) => console.error(msg),
   });
 
-  const { saveFile } = useFileSave({
+  const { saveFile, saveFileAs } = useFileSave({
     locale,
     onFileSaved: handleFileSaved,
     onError: (msg) => console.error(msg),
@@ -437,6 +438,9 @@ export default function App() {
           break;
         case "save-file":
           state.saveFile(state.editor.getContent(), state.filepath);
+          break;
+        case "save-file-as":
+          state.saveFileAs(state.editor.getContent(), state.filepath);
           break;
         case "export-pdf":
           state.exportPDF();

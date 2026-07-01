@@ -58,5 +58,40 @@ export function useFileSave({ locale, onFileSaved, onError }: UseFileSaveOptions
     [locale, onFileSaved, onError]
   );
 
-  return { saveFile };
+  const saveFileAs = useCallback(
+    async (content: string, currentFilepath: string | null) => {
+      try {
+        const dlDir = await downloadDir();
+        // 优先用当前文件路径作为默认路径，没有则用下载目录
+        const defaultPath = currentFilepath ?? await join(dlDir, `${t(locale, "untitled")}.html`);
+        const selected = await save({
+          title: t(locale, "dialogSaveAsTitle"),
+          defaultPath,
+          filters: [
+            {
+              name: t(locale, "dialogSaveFilter"),
+              extensions: ["html", "htm"],
+            },
+          ],
+        });
+
+        if (!selected) return;
+        let filepath = selected;
+        if (!filepath.toLowerCase().endsWith(".html") && !filepath.toLowerCase().endsWith(".htm")) {
+          filepath += ".html";
+        }
+
+        await writeTextFile(filepath, content);
+        const filename = filepath.split(/[/\\]/).pop() ?? t(locale, "untitled");
+        onFileSaved(filename, filepath);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        onError?.(`另存为失败: ${msg}`);
+        console.error("[useFileSave:saveAs]", err);
+      }
+    },
+    [locale, onFileSaved, onError]
+  );
+
+  return { saveFile, saveFileAs };
 }

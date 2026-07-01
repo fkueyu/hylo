@@ -26,6 +26,7 @@ fn update_menu(app: AppHandle, locale: String) -> Result<(), String> {
     let open_text = if is_zh { "打开文件..." } else { "Open File..." };
     let history_text = if is_zh { "打开历史..." } else { "Open History..." };
     let save_text = if is_zh { "保存" } else { "Save" };
+    let save_as_text = if is_zh { "另存为..." } else { "Save As..." };
     let export_pdf_text = if is_zh { "导出为 PDF..." } else { "Export to PDF..." };
     let export_word_text = if is_zh { "导出为 Word..." } else { "Export to Word..." };
     let theme_text = if is_zh { "切换深色/浅色模式" } else { "Toggle Theme" };
@@ -58,6 +59,7 @@ fn update_menu(app: AppHandle, locale: String) -> Result<(), String> {
     let open_i = MenuItem::with_id(&app, "open-file", open_text, true, Some("CmdOrCtrl+O")).map_err(|e| e.to_string())?;
     let history_i = MenuItem::with_id(&app, "open-history", history_text, true, Some("CmdOrCtrl+Shift+H")).map_err(|e| e.to_string())?;
     let save_i = MenuItem::with_id(&app, "save-file", save_text, true, Some("CmdOrCtrl+S")).map_err(|e| e.to_string())?;
+    let save_as_i = MenuItem::with_id(&app, "save-file-as", save_as_text, true, Some("CmdOrCtrl+Shift+S")).map_err(|e| e.to_string())?;
     let export_pdf_i = MenuItem::with_id(&app, "export-pdf", export_pdf_text, true, Some("CmdOrCtrl+Alt+P")).map_err(|e| e.to_string())?;
     let export_word_i = MenuItem::with_id(&app, "export-word", export_word_text, true, Some("CmdOrCtrl+Shift+W")).map_err(|e| e.to_string())?;
     let theme_i = MenuItem::with_id(&app, "toggle-theme", theme_text, true, Some("CmdOrCtrl+T")).map_err(|e| e.to_string())?;
@@ -87,7 +89,7 @@ fn update_menu(app: AppHandle, locale: String) -> Result<(), String> {
         &app,
         file_text,
         true,
-        &[&new_i, &open_i, &history_i, &sep, &save_i, &sep, &export_pdf_i, &export_word_i],
+        &[&new_i, &open_i, &history_i, &sep, &save_i, &save_as_i, &sep, &export_pdf_i, &export_word_i],
     ).map_err(|e| e.to_string())?;
 
     let edit_submenu = Submenu::with_items(

@@ -27,12 +27,14 @@ export const translations = {
     dialogFilter: "HTML 文件",
     dialogSaveTitle: "保存 HTML 文件",
     dialogSaveFilter: "HTML 文件",
+    dialogSaveAsTitle: "另存为",
 
     // 菜单
     menuFile: "文件",
     menuView: "视图",
     menuEdit: "编辑",
     saveFile: "保存",
+    saveFileAs: "另存为",
     toggleTheme: "切换主题",
     
     // 右键菜单
@@ -111,11 +113,13 @@ export const translations = {
     dialogFilter: "HTML Files",
     dialogSaveTitle: "Save HTML File",
     dialogSaveFilter: "HTML Files",
+    dialogSaveAsTitle: "Save As",
 
     menuFile: "File",
     menuView: "View",
     menuEdit: "Edit",
     saveFile: "Save",
+    saveFileAs: "Save As",
     toggleTheme: "Toggle Theme",
 
     copy: "Copy",
