@@ -209,6 +209,8 @@ export default function App() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   const updateModalRef = useRef<any>(null);
+  // 防止 win.destroy() 触发第二次 onCloseRequested 时重入
+  const isClosingRef = useRef(false);
 
   const isMac = typeof window !== "undefined" && navigator.userAgent.includes("Mac");
 
@@ -258,9 +260,12 @@ export default function App() {
   useEffect(() => {
     const win = getCurrentWindow();
     const unlisten = win.onCloseRequested(async (event) => {
+      // 已经在处理关闭流程中（win.destroy() 本身也会触发此事件），直接放行
+      if (isClosingRef.current) return;
       const { isDirty, locale: loc, saveFile: sf, filepath: fp, editor: ed } = latestRef.current;
       if (!isDirty) return;
       event.preventDefault();
+      isClosingRef.current = true; // 标记已进入关闭流程，防止后续重入
       const { ask: askDialog } = await import("@tauri-apps/plugin-dialog");
       const choice = await askDialog(
         loc === "zh"
