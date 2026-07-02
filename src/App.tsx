@@ -209,8 +209,6 @@ export default function App() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   const updateModalRef = useRef<any>(null);
-  // 防止 win.destroy() 触发第二次 onCloseRequested 时重入
-  const isClosingRef = useRef(false);
 
   const isMac = typeof window !== "undefined" && navigator.userAgent.includes("Mac");
 
@@ -256,36 +254,33 @@ export default function App() {
     };
   });
 
-  // Fix 1: 关窗前未保存提醒
+  // 关窗前未保存提醒
   useEffect(() => {
     const win = getCurrentWindow();
     const unlisten = win.onCloseRequested(async (event) => {
-      // isClosingRef=true 说明已经走过一次处理流程了，本次直接放行让窗口正常关闭
-      if (isClosingRef.current) return;
+      event.preventDefault(); // 必须始终拦截，由我们统一控制退出
       const { isDirty, locale: loc, saveFile: sf, filepath: fp, editor: ed } = latestRef.current;
-      if (!isDirty) return;
-      event.preventDefault();
-      isClosingRef.current = true; // 标记已进入关闭流程
-      const { ask: askDialog } = await import("@tauri-apps/plugin-dialog");
-      const choice = await askDialog(
-        loc === "zh"
-          ? "当前文件有未保存的修改，是否在关闭前保存？"
-          : "You have unsaved changes. Save before closing?",
-        {
-          title: loc === "zh" ? "关闭前保存" : "Save Before Close",
-          kind: "warning",
-          okLabel: loc === "zh" ? "保存" : "Save",
-          cancelLabel: loc === "zh" ? "不保存" : "Don't Save",
+      if (isDirty) {
+        const { ask: askDialog } = await import("@tauri-apps/plugin-dialog");
+        const choice = await askDialog(
+          loc === "zh"
+            ? "当前文件有未保存的修改，是否在关闭前保存？"
+            : "You have unsaved changes. Save before closing?",
+          {
+            title: loc === "zh" ? "关闭前保存" : "Save Before Close",
+            kind: "warning",
+            okLabel: loc === "zh" ? "保存" : "Save",
+            cancelLabel: loc === "zh" ? "不保存" : "Don't Save",
+          }
+        );
+        if (choice) {
+          // 用户选了"保存"，如果保存失败或取消了另存为对话框，则不退出
+          const saved = await sf(ed.getContent(), fp);
+          if (!saved) return; // 保存被取消或失败，回到应用
         }
-      );
-      if (choice) {
-        await sf(ed.getContent(), fp);
       }
-      // 用 win.close() 而非 win.destroy()：
-      // close() 会再次触发 onCloseRequested，但 isClosingRef=true 让它直接 return，
-      // 不调用 preventDefault，窗口走正常关闭流程。
-      // destroy() 在 Tauri v2 macOS 上有时不可靠，可能被系统层再次拦截。
-      await win.close();
+      const { exit } = await import("@tauri-apps/plugin-process");
+      await exit(0);
     });
     return () => { unlisten.then((fn) => fn()); };
     // eslint-disable-next-line react-hooks/exhaustive-deps

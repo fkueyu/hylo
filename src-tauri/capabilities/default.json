@@ -18,7 +18,8 @@
     },
     "core:window:allow-start-dragging",
     "updater:default",
-    "process:allow-restart"
+    "process:allow-restart",
+    "process:allow-exit"
   ]
 }
 

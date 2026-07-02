@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.19] - 2026-07-02
+
+### Added / 新增
+- Added "Save As" (另存为) functionality with shortcut `Cmd+Shift+S`. (添加了“另存为”功能，快捷键为 `Cmd+Shift+S`。)
+- Added a basic HTML5 template when creating a new file instead of initializing with an empty string. (新建文件时默认使用最小 HTML5 骨架模版，而非空文本。)
+- Added `process:allow-exit` permission to tauri capabilities configuration. (在 tauri 权限配置中添加了 `process:allow-exit` 权限。)
+
+### Fixed / 修复
+- Fixed closing behavior with unsaved changes. Now prompts to save before exit and correctly handles cancelling the save dialog without terminating the app. (修复了未保存修改时直接关闭窗口的逻辑。现在会在退出前提示保存，并正确处理了取消另存为对话框时不退出的行为。)
+- Fixed a bug where drag-and-dropping or opening a file via system would silently overwrite unsaved changes. (修复了拖入文件或通过系统打开新文件时会直接覆盖未保存修改的问题，现在会弹出二次确认。)
+
 ## [0.1.18] - 2026-06-24
 
 ### Added / 新增

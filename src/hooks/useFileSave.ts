@@ -13,7 +13,7 @@ interface UseFileSaveOptions {
 
 export function useFileSave({ locale, onFileSaved, onError }: UseFileSaveOptions) {
   const saveFile = useCallback(
-    async (content: string, currentFilepath: string | null) => {
+    async (content: string, currentFilepath: string | null): Promise<boolean> => {
       try {
         let filepath = currentFilepath;
 
@@ -33,7 +33,7 @@ export function useFileSave({ locale, onFileSaved, onError }: UseFileSaveOptions
             ],
           });
 
-          if (!selected) return; // 用户取消
+          if (!selected) return false; // 用户取消
           filepath = selected;
           
           // 强制补充 .html 后缀
@@ -49,10 +49,12 @@ export function useFileSave({ locale, onFileSaved, onError }: UseFileSaveOptions
         const filename = filepath.split(/[/\\]/).pop() ?? t(locale, "untitled");
         
         onFileSaved(filename, filepath);
+        return true;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         onError?.(`保存失败: ${msg}`);
         console.error("[useFileSave]", err);
+        return false;
       }
     },
     [locale, onFileSaved, onError]
