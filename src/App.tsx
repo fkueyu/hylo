@@ -260,12 +260,12 @@ export default function App() {
   useEffect(() => {
     const win = getCurrentWindow();
     const unlisten = win.onCloseRequested(async (event) => {
-      // 已经在处理关闭流程中（win.destroy() 本身也会触发此事件），直接放行
+      // isClosingRef=true 说明已经走过一次处理流程了，本次直接放行让窗口正常关闭
       if (isClosingRef.current) return;
       const { isDirty, locale: loc, saveFile: sf, filepath: fp, editor: ed } = latestRef.current;
       if (!isDirty) return;
       event.preventDefault();
-      isClosingRef.current = true; // 标记已进入关闭流程，防止后续重入
+      isClosingRef.current = true; // 标记已进入关闭流程
       const { ask: askDialog } = await import("@tauri-apps/plugin-dialog");
       const choice = await askDialog(
         loc === "zh"
@@ -281,7 +281,11 @@ export default function App() {
       if (choice) {
         await sf(ed.getContent(), fp);
       }
-      await win.destroy();
+      // 用 win.close() 而非 win.destroy()：
+      // close() 会再次触发 onCloseRequested，但 isClosingRef=true 让它直接 return，
+      // 不调用 preventDefault，窗口走正常关闭流程。
+      // destroy() 在 Tauri v2 macOS 上有时不可靠，可能被系统层再次拦截。
+      await win.close();
     });
     return () => { unlisten.then((fn) => fn()); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
