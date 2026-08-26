@@ -1,32 +1,42 @@
-// ============================================================
-// PreviewPanel
-// AST 渲染预览面板，事件代理处理点击同步
-// ============================================================
-
-import React, { useRef, useEffect, useState, useCallback } from "react";
-import { createPortal } from "react-dom";
-import { ASTRenderer } from "@/components/ASTRenderer";
-import { ContextMenu, useContextMenu } from "@/components/ContextMenu";
-import type { HyloNode } from "@/types";
-import { t } from "@/i18n";
-import type { Locale } from "@/i18n";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { ContextMenu, useContextMenu } from "@/components/ContextMenu";
+import {
+  buildPreviewFrameDocument,
+  isPreviewFrameMessage,
+  type PreviewMode,
+} from "@/core/preview-security";
+import { t, type Locale } from "@/i18n";
+import type { HyloNode } from "@/types";
+import { eventBus } from "@/core/event-bus";
 
 interface PreviewPanelProps {
   astRoot: HyloNode | null;
   onNodeClick?: (nodeId: string) => void;
   highlightedNodeId?: string | null;
   locale?: Locale;
-  /** 面板头部标签 */
   label?: string;
-  /** 空内容提示 */
   emptyHint?: string;
-  /** 面板头部附加的右侧操作区 */
   headerRight?: React.ReactNode;
-  /** 右键菜单动作回调 */
   onContextMenuAction?: (actionId: string, nodeId?: string) => void;
-  /** 当前打开的文件路径，用于本地资源相对路径解析 */
   filepath?: string | null;
+}
+
+const PREVIEW_MODE_KEY = "hylo.previewMode";
+const INTERACTIVE_NOTICE_KEY = "hylo.interactivePreviewAcknowledged";
+
+function readPreviewMode(): PreviewMode {
+  return localStorage.getItem(PREVIEW_MODE_KEY) === "interactive" ? "interactive" : "safe";
+}
+
+function collectNodeIds(root: HyloNode | null): Set<string> {
+  const ids = new Set<string>();
+  function visit(node: HyloNode) {
+    ids.add(node.nodeId);
+    node.children?.forEach(visit);
+  }
+  if (root) visit(root);
+  return ids;
 }
 
 export function PreviewPanel({
@@ -40,179 +50,153 @@ export function PreviewPanel({
   onContextMenuAction,
   filepath,
 }: PreviewPanelProps) {
-  const containerRef = useRef<HTMLIFrameElement>(null);
-  const [iframeDocument, setIframeDocument] = useState<Document | null>(null);
-  const { menuData, openContextMenu, closeContextMenu } = useContextMenu();
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  const frameReadyRef = useRef(false);
+  const highlightedNodeIdRef = useRef(highlightedNodeId);
+  const [previewMode, setPreviewMode] = useState<PreviewMode>(readPreviewMode);
+  const { menuData, openContextMenuAt, closeContextMenu } = useContextMenu();
+  const nodeIds = useMemo(() => collectNodeIds(astRoot), [astRoot]);
 
-  // 初始化 iframe 文档
-  useEffect(() => {
-    if (containerRef.current && containerRef.current.contentDocument) {
-      const win = containerRef.current.contentWindow as any;
-      if (win) {
-        // 预定义 tailwind 对象，防止内联脚本 tailwind.config = ... 抛出未定义异常
-        win.tailwind = win.tailwind || {};
-      }
-      setIframeDocument(containerRef.current.contentDocument);
-    }
+  const baseHref = useMemo(() => {
+    if (!filepath) return null;
+    const separator = Math.max(filepath.lastIndexOf("/"), filepath.lastIndexOf("\\"));
+    if (separator < 0) return null;
+    return `${convertFileSrc(filepath.slice(0, separator))}/`;
+  }, [filepath]);
+
+  const frameDocument = useMemo(
+    () => buildPreviewFrameDocument({ mode: previewMode, baseHref }),
+    [baseHref, previewMode],
+  );
+
+  const postToFrame = useCallback((message: Record<string, unknown>) => {
+    if (!frameReadyRef.current) return;
+    frameRef.current?.contentWindow?.postMessage(
+      { channel: "hylo-preview", ...message },
+      "*",
+    );
   }, []);
 
-  // 动态更新 iframe head 中的 <base> 标签，只在 filepath 真正改变时更新，避免重复渲染和请求抖动
+  const sendRender = useCallback(() => {
+    postToFrame({
+      type: "render",
+      ast: astRoot,
+      mode: previewMode,
+      highlightedNodeId: highlightedNodeIdRef.current ?? null,
+    });
+  }, [astRoot, postToFrame, previewMode]);
+
+  const handleFrameLoad = useCallback(() => {
+    // The child may post preview-ready before React's passive message effect is installed.
+    // load is a reliable second handshake point after the frame runtime has initialized.
+    frameReadyRef.current = true;
+    sendRender();
+  }, [sendRender]);
+
   useEffect(() => {
-    if (!iframeDocument) return;
+    highlightedNodeIdRef.current = highlightedNodeId;
+  }, [highlightedNodeId]);
 
-    let baseEl = iframeDocument.head.querySelector("base");
+  useEffect(() => {
+    frameReadyRef.current = false;
+  }, [frameDocument]);
 
-    if (!filepath) {
-      if (baseEl) {
-        baseEl.remove();
-      }
+  useEffect(() => {
+    if (previewMode === "interactive" && frameReadyRef.current) {
+      frameReadyRef.current = false;
+      const frame = frameRef.current;
+      if (frame) frame.srcdoc = frameDocument;
       return;
     }
+    sendRender();
+  }, [frameDocument, previewMode, sendRender]);
 
-    const dirPath = filepath.substring(0, Math.max(filepath.lastIndexOf("/"), filepath.lastIndexOf("\\")));
-    const baseHref = convertFileSrc(dirPath) + "/";
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.source !== frameRef.current?.contentWindow) return;
+      if (!isPreviewFrameMessage(event.data)) return;
 
-    if (!baseEl) {
-      baseEl = iframeDocument.createElement("base");
-      // 插入为 head 的第一个子元素，确保在任何 stylesheet/script 之前生效
-      iframeDocument.head.insertBefore(baseEl, iframeDocument.head.firstChild);
-    }
-
-    if (baseEl.getAttribute("href") !== baseHref) {
-      baseEl.setAttribute("href", baseHref);
-    }
-  }, [iframeDocument, filepath]);
-
-  // 点击事件处理
-  const handleClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      const target = e.target as HTMLElement;
-      if (!target || !target.closest) return;
-      
-      const nodeEl = target.closest("[data-hylo-id]");
-      if (!nodeEl) return;
-      const nodeId = nodeEl.getAttribute("data-hylo-id");
-      if (nodeId) {
-        onNodeClick?.(nodeId);
-      }
-    },
-    [onNodeClick]
-  );
-
-  const handleContextMenu = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      e.preventDefault(); // 必须阻止浏览器默认右键菜单
-      e.stopPropagation(); // 阻止冒泡到 document 导致菜单立刻关闭
-      const target = e.target as HTMLElement;
-      
-      // 如果不是元素节点（比如文本节点），取其父元素
-      const el = target?.nodeType === 1 ? target : target?.parentElement;
-      
-      if (!el || typeof el.closest !== 'function') {
-        openContextMenu(e);
+      if (event.data.type === "preview-ready") {
+        frameReadyRef.current = true;
+        sendRender();
         return;
       }
-      
-      const nodeEl = el.closest("[data-hylo-id]");
-      const nodeId = nodeEl ? nodeEl.getAttribute("data-hylo-id") : undefined;
-      
-      openContextMenu(e, nodeId ?? undefined);
-      
-      if (nodeId) {
-        onNodeClick?.(nodeId);
+
+      const nodeId = event.data.nodeId;
+      if (nodeId && !nodeIds.has(nodeId)) return;
+      if (event.data.type === "node-selected") {
+        onNodeClick?.(event.data.nodeId);
+        return;
       }
-    },
-    [openContextMenu, onNodeClick]
-  );
 
-  // 当高亮节点变化时，将该节点滚动到可见区域
+      const rect = frameRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      openContextMenuAt(rect.left + event.data.x, rect.top + event.data.y, nodeId ?? undefined);
+      if (nodeId) onNodeClick?.(nodeId);
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [nodeIds, onNodeClick, openContextMenuAt, sendRender]);
+
   useEffect(() => {
-    if (!highlightedNodeId || !iframeDocument) return;
+    postToFrame({
+      type: "highlight",
+      nodeId: highlightedNodeId ?? null,
+      scroll: true,
+    });
+  }, [highlightedNodeId, postToFrame]);
 
-    const el = iframeDocument.querySelector(
-      `[data-hylo-id="${highlightedNodeId}"]`
-    ) as HTMLElement | null;
+  useEffect(() => eventBus.on("preview:print", () => {
+    postToFrame({ type: "print" });
+  }), [postToFrame]);
 
-    if (el) {
-      el.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "nearest",
-      });
+  const togglePreviewMode = () => {
+    const nextMode: PreviewMode = previewMode === "safe" ? "interactive" : "safe";
+    if (
+      nextMode === "interactive"
+      && localStorage.getItem(INTERACTIVE_NOTICE_KEY) !== "true"
+    ) {
+      if (!window.confirm(t(locale, "interactivePreviewConfirm"))) return;
+      localStorage.setItem(INTERACTIVE_NOTICE_KEY, "true");
     }
-  }, [highlightedNodeId, iframeDocument]);
+    localStorage.setItem(PREVIEW_MODE_KEY, nextMode);
+    setPreviewMode(nextMode);
+  };
 
   return (
     <div className="preview-panel">
       {label && (
         <div className="preview-panel__header">
           <span className="preview-panel__label">{label}</span>
-          {headerRight && <div style={{ marginLeft: "auto" }}>{headerRight}</div>}
+          <span className="preview-panel__security-hint">
+            {previewMode === "safe" ? t(locale, "safePreviewHint") : ""}
+          </span>
+          <button
+            type="button"
+            className={`preview-panel__mode ${previewMode === "interactive" ? "is-interactive" : ""}`}
+            onClick={togglePreviewMode}
+            aria-pressed={previewMode === "interactive"}
+          >
+            {t(locale, previewMode === "safe" ? "safePreview" : "interactivePreview")}
+          </button>
+          {headerRight && <div className="preview-panel__actions">{headerRight}</div>}
         </div>
       )}
+
       <iframe
         className="preview-panel__content"
-        ref={containerRef}
-        style={{ border: 'none', width: '100%', height: '100%', display: 'block', backgroundColor: '#fff' }}
-        onLoad={(e) => {
-          const doc = (e.target as HTMLIFrameElement).contentDocument;
-          if (doc) setIframeDocument(doc);
-        }}
+        ref={frameRef}
+        sandbox="allow-scripts"
+        srcDoc={frameDocument}
+        onLoad={handleFrameLoad}
+        title={label || t(locale, "previewPanel")}
       />
-      {iframeDocument && createPortal(
-        <div onClick={handleClick} onContextMenu={handleContextMenu} style={{ minHeight: '100%' }}>
-          {/* 注入预览专用的高亮样式和滚动条美化 */}
-          <style>
-              {`
-                :host {
-                  display: block;
-                  height: 100%;
-                  overflow: auto;
-                  /* 阻断宿主的暗色模式文本颜色继承，恢复浏览器默认的黑底白字阅读体验 */
-                  color: #000000;
-                  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                  font-size: 16px;
-                }
-                ::-webkit-scrollbar { width: 6px; height: 6px; }
-                ::-webkit-scrollbar-track { background: transparent; }
-                ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.12); border-radius: 3px; }
-                ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.22); }
-                .hylo-preview-highlight {
-                  background: rgba(99, 102, 241, 0.12) !important;
-                  outline: 2px solid rgba(99, 102, 241, 0.55) !important;
-                  outline-offset: 1px;
-                  border-radius: 4px;
-                  transition: all 120ms ease;
-                }
-                [data-hylo-id]:hover {
-                  cursor: pointer;
-                  outline: 1px dashed rgba(99, 102, 241, 0.3);
-                  outline-offset: 1px;
-                  border-radius: 4px;
-                }
-                .hylo-preview-highlight:hover {
-                  outline: 2px solid rgba(99, 102, 241, 0.55) !important;
-                }
-                @media print {
-                  [data-hylo-id]:hover {
-                    outline: none !important;
-                  }
-                  .hylo-preview-highlight {
-                    background: transparent !important;
-                    outline: none !important;
-                  }
-                }
-              `}
-            </style>
-            {astRoot ? (
-              <ASTRenderer root={astRoot} highlightedNodeId={highlightedNodeId ?? null} />
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#aaa', fontSize: '14px', fontFamily: 'system-ui, sans-serif' }}>
-                <p>{emptyHint}</p>
-              </div>
-            )}
-        </div>,
-        iframeDocument.body
+
+      {!astRoot && (
+        <div className="preview-panel__empty">
+          <p>{emptyHint}</p>
+        </div>
       )}
 
       {menuData.visible && (
@@ -236,7 +220,7 @@ export function PreviewPanel({
                       closeContextMenu();
                     },
                   },
-                  { isDivider: true } as any, // 简易分隔线支持（如果 ContextMenu 组件支持的话，这里先兼容）
+                  { isDivider: true } as const,
                 ]
               : []),
             {

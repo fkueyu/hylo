@@ -2,7 +2,7 @@
 // App.tsx — Hylo 根组件（含文件打开、双语、全屏布局）
 // ============================================================
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { SplitView } from "@/components/SplitView";
 import { MonacoPanel } from "@/components/MonacoPanel";
 import { PreviewPanel } from "@/components/PreviewPanel";
@@ -22,6 +22,16 @@ import { UpdateModal } from "@/components/UpdateModal";
 import { HistoryModal } from "@/components/HistoryModal";
 import { AboutModal } from "@/components/AboutModal";
 import { useHistory } from "@/hooks/useHistory";
+import { DocumentOutline } from "@/components/DocumentOutline";
+import {
+  buildDocumentOutline,
+  countOutlineItems,
+  findNodeTrail,
+  isUsableHtmlClipboard,
+  normalizeHtmlClipboard,
+} from "@/core/document-structure";
+
+const isTauriRuntime = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 // ── 内置示例文档 ─────────────────────────────────────────────
 const INITIAL_HTML = `<!DOCTYPE html>
@@ -93,8 +103,8 @@ const INITIAL_HTML = `<!DOCTYPE html>
   <h2>架构原理</h2>
   <p>
     每个渲染元素都通过 <code>parse5</code> AST 映射回精确的源码位置。
-    无 <code>iframe</code>，无 <code>innerHTML</code>——
-    只有带稳定节点标识符的干净 React 渲染树。
+    文档在隔离的沙盒 <code>iframe</code> 中渲染；安全预览默认阻止脚本与远程资源，
+    同时用稳定节点标识符保持源码与预览双向定位。
   </p>
 
   <h2>获取更多</h2>
@@ -176,7 +186,8 @@ const INITIAL_HTML_EN = `<!DOCTYPE html>
   <h2>How It Works</h2>
   <p>
     Every rendered element is mapped back to its precise source location using the <code>parse5</code> AST.
-    No <code>iframe</code>, no <code>innerHTML</code> — just a clean React render tree with stable node identifiers.
+    The document renders in an isolated sandbox <code>iframe</code>. Safe Preview blocks scripts and remote
+    resources by default while stable node identifiers preserve bidirectional source mapping.
   </p>
 
   <h2>Learn More</h2>
@@ -207,6 +218,8 @@ export default function App() {
   const [filepath, setFilepath] = useState<string | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isOutlineOpen, setIsOutlineOpen] = useState(true);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const updateModalRef = useRef<any>(null);
 
@@ -215,8 +228,35 @@ export default function App() {
   // 根据当前初始测得的语言加载默认欢迎文档
   const editor = useEditor(locale === "zh" ? INITIAL_HTML : INITIAL_HTML_EN);
 
+  const outlineItems = useMemo(
+    () => editor.parseResult ? buildDocumentOutline(editor.parseResult.root) : [],
+    [editor.parseResult],
+  );
+  const selectedTrail = useMemo(() => {
+    if (!editor.parseResult || !selectedNodeId) return [];
+    return findNodeTrail(editor.parseResult.root, selectedNodeId);
+  }, [editor.parseResult, selectedNodeId]);
+
+  useEffect(() => {
+    if (editor.highlightedPreviewNodeId) {
+      setSelectedNodeId(editor.highlightedPreviewNodeId);
+    }
+  }, [editor.highlightedPreviewNodeId]);
+
+  useEffect(() => {
+    if (selectedNodeId && editor.parseResult && selectedTrail.length === 0) {
+      setSelectedNodeId(null);
+    }
+  }, [editor.parseResult, selectedNodeId, selectedTrail.length]);
+
+  const handleNodeSelect = useCallback((nodeId: string) => {
+    setSelectedNodeId(nodeId);
+    editor.handlePreviewClick(nodeId);
+  }, [editor]);
+
   // 首屏挂载以及 locale 变更时同步通知 Rust 刷新原生菜单栏
   useEffect(() => {
+    if (!isTauriRuntime) return;
     invoke("update_menu", { locale }).catch((err) => {
       console.error("Failed to update native menu via invoke:", err);
     });
@@ -256,6 +296,7 @@ export default function App() {
 
   // 关窗前未保存提醒
   useEffect(() => {
+    if (!isTauriRuntime) return;
     const win = getCurrentWindow();
     const unlisten = win.onCloseRequested(async (event) => {
       event.preventDefault(); // 必须始终拦截，由我们统一控制退出
@@ -288,6 +329,7 @@ export default function App() {
 
   // 处理冷启动或运行中从系统级 "Open With" 传来的文件
   useEffect(() => {
+    if (!isTauriRuntime) return;
     const handleSystemOpenFile = async (path: string, fromColdStart = false) => {
       // Fix 2: 非冷启动模式下，检查 isDirty，防止拖拽/系统打开默默覆盖未保存内容
       if (!fromColdStart && latestRef.current.isDirty) {
@@ -416,7 +458,7 @@ export default function App() {
       });
       if (!confirm) return;
     }
-    editor.loadContent(EMPTY_HTML_TEMPLATE);
+    editor.loadContent(EMPTY_HTML_TEMPLATE, false);
     setFilename(null);
     setFilepath(null);
   }, [editor, locale, EMPTY_HTML_TEMPLATE]);
@@ -434,6 +476,40 @@ export default function App() {
     }
     openFile();
   }, [editor.isDirty, openFile, locale]);
+
+  const handlePasteHtml = useCallback(async () => {
+    try {
+      const html = normalizeHtmlClipboard(await navigator.clipboard.readText());
+      if (!isUsableHtmlClipboard(html)) {
+        await message(t(locale, "clipboardInvalidDesc"), {
+          title: t(locale, "clipboardInvalidTitle"),
+          kind: "warning",
+        });
+        return;
+      }
+
+      if (editor.isDirty) {
+        const confirm = await ask(t(locale, "confirmPasteDesc"), {
+          title: t(locale, "confirmPasteTitle"),
+          kind: "warning",
+          okLabel: t(locale, "confirmOk"),
+          cancelLabel: t(locale, "confirmCancel"),
+        });
+        if (!confirm) return;
+      }
+
+      editor.loadContent(html, false);
+      setFilename(null);
+      setFilepath(null);
+      setLayout("both");
+    } catch (error) {
+      console.error("Failed to read clipboard:", error);
+      await message(t(locale, "clipboardReadErrorDesc"), {
+        title: t(locale, "clipboardReadErrorTitle"),
+        kind: "error",
+      });
+    }
+  }, [editor, locale]);
 
   const {
     menuData: globalMenuData,
@@ -483,8 +559,26 @@ export default function App() {
     </div>
   );
 
+  const renderSelectionTrail = () => (
+    <div className="selection-trail" aria-live="polite">
+      {selectedTrail.length > 0 ? (
+        selectedTrail.slice(-4).map((item, index) => (
+          <span className="selection-trail__segment" key={item.nodeId}>
+            {index > 0 && <span className="selection-trail__separator">/</span>}
+            <button type="button" onClick={() => handleNodeSelect(item.nodeId)}>
+              {item.tagName}{item.detail}
+            </button>
+          </span>
+        ))
+      ) : (
+        <span className="selection-trail__hint">{t(locale, "selectElementHint")}</span>
+      )}
+    </div>
+  );
+
   // 监听 macOS 原生顶部菜单栏事件
   useEffect(() => {
+    if (!isTauriRuntime) return;
     const unlisten = listen<string>("native-menu-action", (event) => {
       const state = latestRef.current;
       switch (event.payload) {
@@ -543,26 +637,16 @@ export default function App() {
       {/* ── 全局统一标题栏 ── */}
       <header className={`app-titlebar ${isMac ? "app-titlebar--mac" : ""}`} data-tauri-drag-region>
         <div className="app-titlebar__left">
-          <img 
-            src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"} 
-            alt="Logo" 
-            style={{ 
-              width: "16px",
-              height: "16px",
-              objectFit: "contain",
-              userSelect: "none",
-              display: "block"
-            }} 
+          <img
+            className="app-titlebar__brandmark"
+            src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
+            alt=""
           />
           <div className="app-titlebar__title-group">
             <span className="app-titlebar__name">Hylo</span>
             <span className="app-titlebar__sep">/</span>
-            <span 
-              className="app-titlebar__filename" 
-              style={{ 
-                maxWidth: "400px", 
-                cursor: "default"
-              }}
+            <span
+              className="app-titlebar__filename"
               title={filepath ? filepath : (filename || t(locale, "untitled"))}
             >
               {filename || t(locale, "untitled")}
@@ -572,15 +656,41 @@ export default function App() {
         </div>
 
         <div className="app-titlebar__right">
+          <button
+            type="button"
+            className="toolbar-btn toolbar-btn--primary"
+            onClick={handlePasteHtml}
+            title={t(locale, "pasteHtmlHint")}
+          >
+            <svg viewBox="0 0 18 18" aria-hidden="true">
+              <path d="M6.5 4.25V3.5A1.5 1.5 0 0 1 8 2h2a1.5 1.5 0 0 1 1.5 1.5v.75" />
+              <path d="M5 4.25h8A1.75 1.75 0 0 1 14.75 6v8A1.75 1.75 0 0 1 13 15.75H5A1.75 1.75 0 0 1 3.25 14V6A1.75 1.75 0 0 1 5 4.25Z" />
+              <path d="M6.5 8.25h5M6.5 11.25h3.25" />
+            </svg>
+            <span>{t(locale, "pasteHtml")}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`toolbar-btn toolbar-btn--icon ${isOutlineOpen ? "is-active" : ""}`}
+            onClick={() => setIsOutlineOpen((open) => !open)}
+            title={t(locale, isOutlineOpen ? "hideStructure" : "showStructure")}
+            aria-pressed={isOutlineOpen}
+          >
+            <svg viewBox="0 0 18 18" aria-hidden="true">
+              <path d="M3.25 4.25h3.5v3.5h-3.5zM11.25 3.25h3.5v3.5h-3.5zM11.25 11.25h3.5v3.5h-3.5z" />
+              <path d="M6.75 6h2A2.5 2.5 0 0 1 11.25 8.5v2.75M8.75 12.75h2.5" />
+            </svg>
+          </button>
+
           {editor.parseResult && (
             <span className="app-titlebar__stats">
               {editor.parseResult.nodeCount}{t(locale, "nodes")}
-              &nbsp;·&nbsp;
-              {editor.parseResult.parseTime.toFixed(1)}&thinsp;{t(locale, "ms")}
+              <span className="app-titlebar__parse-time">
+                &nbsp;·&nbsp;{editor.parseResult.parseTime.toFixed(1)}&thinsp;{t(locale, "ms")}
+              </span>
             </span>
           )}
-          
-          {editor.parseResult && <div className="app-titlebar__divider" />}
 
           {renderLayoutSwitcher()}
           
@@ -599,12 +709,21 @@ export default function App() {
           />
           
           <button
-            className="toolbar-btn toolbar-btn--lang"
+            type="button"
+            className="toolbar-btn toolbar-btn--icon"
             onClick={toggleTheme}
             title={t(locale, "toggleTheme")}
-            style={{ background: "transparent", border: "none", padding: 0, height: "auto" }}
           >
-            {theme === "dark" ? "🌙" : "☀️"}
+            {theme === "dark" ? (
+              <svg viewBox="0 0 18 18" aria-hidden="true">
+                <path d="M14.75 11.25A6.25 6.25 0 0 1 6.75 3.2a6.25 6.25 0 1 0 8 8.05Z" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 18 18" aria-hidden="true">
+                <circle cx="9" cy="9" r="3" />
+                <path d="M9 1.75v1.5M9 14.75v1.5M1.75 9h1.5M14.75 9h1.5M3.87 3.87l1.06 1.06M13.07 13.07l1.06 1.06M14.13 3.87l-1.06 1.06M4.93 13.07l-1.06 1.06" />
+              </svg>
+            )}
           </button>
         </div>
       </header>
@@ -612,27 +731,51 @@ export default function App() {
       {/* ── 主编辑区 ── */}
       <main className="app-main">
         <SplitView
-          initialRatio={0.45}
+          initialRatio={0.4}
           minPanelWidth={240}
           layoutMode={layout}
+          mappingActive={Boolean(selectedNodeId)}
           left={
-            <MonacoPanel
-              initialContent={editor.content}
-              theme={theme}
-              onEditorReady={editor.setMonacoEditor}
-              onContentChange={editor.handleContentChange}
-              onCursorChange={editor.handleCursorChange}
-              highlightRange={editor.highlightedSourceRange}
-              locale={locale}
-            />
+            <div className={`source-workspace ${isOutlineOpen ? "source-workspace--with-outline" : ""}`}>
+              {isOutlineOpen && (
+                <section className="outline-panel" aria-label={t(locale, "structurePanel")}>
+                  <div className="outline-panel__header">
+                    <span>{t(locale, "structurePanel")}</span>
+                    <span className="outline-panel__count">{countOutlineItems(outlineItems)}</span>
+                  </div>
+                  <DocumentOutline
+                    items={outlineItems}
+                    selectedNodeId={selectedNodeId}
+                    selectedTrailIds={selectedTrail.map((item) => item.nodeId)}
+                    emptyLabel={t(locale, "outlineEmpty")}
+                    collapseLabel={t(locale, "collapseNode")}
+                    expandLabel={t(locale, "expandNode")}
+                    onSelect={handleNodeSelect}
+                  />
+                </section>
+              )}
+              <MonacoPanel
+                initialContent={editor.content}
+                theme={theme}
+                onEditorReady={editor.setMonacoEditor}
+                onContentChange={editor.handleContentChange}
+                onCursorChange={editor.handleCursorChange}
+                highlightRange={editor.highlightedSourceRange}
+                locale={locale}
+                label={t(locale, "sourcePanel")}
+                headerRight={renderSelectionTrail()}
+              />
+            </div>
           }
           right={
             <PreviewPanel
               astRoot={editor.parseResult?.root ?? null}
-              highlightedNodeId={editor.highlightedPreviewNodeId}
-              onNodeClick={editor.handlePreviewClick}
+              highlightedNodeId={selectedNodeId}
+              onNodeClick={handleNodeSelect}
               locale={locale}
               filepath={filepath}
+              label={t(locale, "previewPanel")}
+              headerRight={renderSelectionTrail()}
               emptyHint={t(locale, "emptyHint")}
               onContextMenuAction={(action) => {
                 switch (action) {

@@ -3,42 +3,42 @@
    Design System: Dark shell + Light preview
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-
 /* ── 设计 Token ──────────────────────────────────────────── */
 :root {
-  /* 颜色 (Apple Native 2026 Dark) */
-  --color-bg:              #1c1c1e;
-  --color-bg-panel:        #1e1e1e;
-  --color-bg-panel-header: #2c2c2e;
-  --color-bg-preview:      #ffffff;
-  --color-bg-elevated:     rgba(44, 44, 46, 0.85); /* macOS 悬浮材料暗色毛玻璃底色 */
-  --color-border:          rgba(255, 255, 255, 0.1);
-  --color-divider:         #2c2c2e;
-  --color-divider-hover:   #0a84ff;
-  --color-text-primary:    #ffffff;
-  --color-text-secondary:  #8e8e93;
-  --color-text-muted:      #636366;
-  --color-accent:          #0a84ff;
-  --color-accent-hover:    #409cff;
-  --color-accent-dim:      rgba(10, 132, 255, 0.2);
-  --color-highlight-bg:    rgba(10, 132, 255, 0.2);
-  --color-highlight-border:rgba(10, 132, 255, 0.6);
+  /* Hylo Structure Mapping */
+  --color-bg:              #15161a;
+  --color-bg-panel:        #1b1d22;
+  --color-bg-panel-header: #202228;
+  --color-bg-preview:      #f7f8fa;
+  --color-bg-elevated:     rgba(38, 40, 47, 0.92);
+  --color-border:          rgba(255, 255, 255, 0.09);
+  --color-divider:         #262930;
+  --color-divider-hover:   #22c7b8;
+  --color-text-primary:    #f5f6f8;
+  --color-text-secondary:  #a8adb8;
+  --color-text-muted:      #686e7a;
+  --color-accent:          #756ff2;
+  --color-accent-hover:    #928cf7;
+  --color-accent-dim:      rgba(117, 111, 242, 0.18);
+  --color-signal:          #22c7b8;
+  --color-signal-dim:      rgba(34, 199, 184, 0.16);
+  --color-highlight-bg:    rgba(117, 111, 242, 0.18);
+  --color-highlight-border:rgba(117, 111, 242, 0.72);
   --color-btn-hover:       rgba(255, 255, 255, 0.1);
   --color-btn-active:      rgba(255, 255, 255, 0.15);
   --color-shadow-elevated: 0 8px 32px rgba(0,0,0,0.24), 0 2px 8px rgba(0,0,0,0.12);
 
   /* 字体 */
-  --font-ui:   'Inter', system-ui, -apple-system, sans-serif;
+  --font-ui:   -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
 
   /* 尺寸 */
-  --titlebar-height: 38px;
-  --divider-width:   5px;
-  --panel-header-h:  36px;
-  --radius-sm:       4px;
-  --radius-md:       6px;
-  --radius-lg:       8px;
+  --titlebar-height: 46px;
+  --divider-width:   7px;
+  --panel-header-h:  38px;
+  --radius-sm:       5px;
+  --radius-md:       8px;
+  --radius-lg:       12px;
 
   /* 动画 */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -48,21 +48,23 @@
 
 /* ── 浅色模式主题覆盖 ────────────────────────────────────── */
 .theme-light {
-  --color-bg:              #f2f2f7;
-  --color-bg-panel:        #ffffff;
-  --color-bg-panel-header: #f2f2f7;
-  --color-bg-elevated:     rgba(255, 255, 255, 0.85); /* macOS 悬浮材料浅色毛玻璃底色 */
+  --color-bg:              #eceef2;
+  --color-bg-panel:        #f7f8fa;
+  --color-bg-panel-header: #f1f2f5;
+  --color-bg-elevated:     rgba(255, 255, 255, 0.94);
   --color-border:          rgba(0, 0, 0, 0.1);
   --color-divider:         #e5e5ea;
-  --color-divider-hover:   #007aff;
-  --color-text-primary:    #000000;
-  --color-text-secondary:  #8e8e93;
-  --color-text-muted:      #aeaeb2;
-  --color-accent:          #007aff;
-  --color-accent-hover:    #005ecb;
-  --color-accent-dim:      rgba(0, 122, 255, 0.15);
-  --color-highlight-bg:    rgba(0, 122, 255, 0.15);
-  --color-highlight-border:rgba(0, 122, 255, 0.6);
+  --color-divider-hover:   #129f93;
+  --color-text-primary:    #202228;
+  --color-text-secondary:  #646a76;
+  --color-text-muted:      #9298a3;
+  --color-accent:          #625bea;
+  --color-accent-hover:    #5149d9;
+  --color-accent-dim:      rgba(98, 91, 234, 0.12);
+  --color-signal:          #129f93;
+  --color-signal-dim:      rgba(18, 159, 147, 0.12);
+  --color-highlight-bg:    rgba(98, 91, 234, 0.12);
+  --color-highlight-border:rgba(98, 91, 234, 0.64);
   --color-btn-hover:       rgba(0, 0, 0, 0.05);
   --color-btn-active:      rgba(0, 0, 0, 0.10);
   --color-shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -474,6 +476,7 @@ body {
 
 /* ── Preview Panel ───────────────────────────────────────── */
 .preview-panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -501,17 +504,56 @@ body {
   letter-spacing: 0.06em;
 }
 
+.preview-panel__security-hint {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  -webkit-app-region: no-drag;
+}
+
+.preview-panel__mode {
+  height: 24px;
+  padding: 0 8px;
+  color: var(--color-signal);
+  background: var(--color-signal-soft);
+  border: 1px solid color-mix(in srgb, var(--color-signal) 34%, transparent);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  white-space: nowrap;
+  -webkit-app-region: no-drag;
+}
+
+.preview-panel__mode.is-interactive {
+  color: #fff;
+  background: var(--color-accent);
+  border-color: transparent;
+}
+
+.preview-panel__actions {
+  display: flex;
+  align-items: center;
+  -webkit-app-region: no-drag;
+}
+
 .preview-panel__content {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
+  border: 0;
 }
 
 .preview-panel__empty {
+  position: absolute;
+  inset: var(--panel-header-h) 0 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  background: var(--color-bg-preview);
   color: #aaa;
   font-size: 14px;
   font-family: var(--font-ui);
@@ -835,6 +877,518 @@ body {
   to { transform: scale(1); opacity: 1; }
 }
 
+/* ============================================================
+   Hylo AI Review Workbench
+   结构 → 源码 → 预览
+   ============================================================ */
+
+button,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+[role="separator"]:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
+}
+
+.app-titlebar {
+  padding: 0 14px;
+  background:
+    linear-gradient(90deg, rgba(117, 111, 242, 0.05), transparent 28%),
+    var(--color-bg);
+  border-bottom-color: var(--color-border);
+  gap: 18px;
+}
+
+.app-titlebar.app-titlebar--mac {
+  padding-left: 82px;
+}
+
+.app-titlebar.app-titlebar--mac .app-titlebar__left {
+  transform: none;
+}
+
+.app-titlebar__left {
+  gap: 9px;
+}
+
+.app-titlebar__brandmark {
+  width: 19px;
+  height: 19px;
+  display: block;
+  object-fit: contain;
+  user-select: none;
+}
+
+.app-titlebar__title-group {
+  gap: 7px;
+  margin-top: 0;
+}
+
+.app-titlebar__name {
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.app-titlebar__sep {
+  color: var(--color-text-muted);
+  opacity: 0.55;
+}
+
+.app-titlebar__filename {
+  max-width: min(32vw, 420px);
+  color: var(--color-text-secondary);
+  cursor: default;
+}
+
+.app-titlebar__right {
+  gap: 7px;
+}
+
+.app-titlebar__stats {
+  padding: 0 5px;
+  font-size: 10px;
+  letter-spacing: 0.015em;
+  color: var(--color-text-muted);
+}
+
+.toolbar-btn {
+  height: 28px;
+  min-width: 28px;
+  padding: 0 9px;
+  gap: 6px;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  font-weight: 590;
+  box-shadow: none;
+}
+
+.toolbar-btn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-btn-hover);
+  border-color: var(--color-border);
+}
+
+.toolbar-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.45;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 1;
+}
+
+.toolbar-btn--primary {
+  color: #f7f8ff;
+  background: var(--color-accent);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 14px rgba(71, 64, 194, 0.26);
+}
+
+.toolbar-btn--primary:hover {
+  color: #fff;
+  background: var(--color-accent-hover);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.toolbar-btn--icon {
+  width: 28px;
+  padding: 0;
+}
+
+.toolbar-btn--icon.is-active {
+  color: var(--color-signal);
+  background: var(--color-signal-dim);
+  border-color: color-mix(in srgb, var(--color-signal) 32%, transparent);
+}
+
+.menubar-btn {
+  height: 28px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  font-weight: 560;
+}
+
+.menubar-btn:hover {
+  border-color: var(--color-border);
+}
+
+.dropdown-menu {
+  top: calc(100% + 3px);
+  right: 0;
+  left: auto;
+  min-width: 156px;
+  padding: 6px;
+  background: var(--color-bg-elevated);
+  backdrop-filter: blur(22px) saturate(150%);
+  border-radius: 10px;
+  box-shadow: var(--color-shadow-elevated);
+}
+
+.dropdown-item {
+  min-height: 30px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.dropdown-item:hover {
+  background: var(--color-accent-dim);
+  color: var(--color-text-primary);
+}
+
+.layout-switcher {
+  height: 28px;
+  padding: 2px;
+  background: rgba(255, 255, 255, 0.035);
+  border-radius: var(--radius-md);
+}
+
+.layout-switcher__btn {
+  width: 25px;
+  height: 22px;
+  border-radius: 5px;
+}
+
+.layout-switcher__btn.active,
+body.theme-light .layout-switcher__btn.active {
+  color: var(--color-accent);
+  background: var(--color-accent-dim);
+  box-shadow: none;
+}
+
+.split-panel--left {
+  container-type: inline-size;
+}
+
+.split-divider {
+  background: var(--color-divider);
+  border-inline: 1px solid var(--color-border);
+}
+
+.split-divider::before {
+  content: "";
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(180deg, transparent 8%, var(--color-text-muted) 38%, var(--color-text-muted) 62%, transparent 92%);
+  opacity: 0.2;
+}
+
+.split-divider__handle {
+  width: 3px;
+  height: 42px;
+  background: var(--color-signal);
+  box-shadow: 0 0 14px rgba(34, 199, 184, 0.45);
+}
+
+.split-view--mapping-active .split-divider__handle {
+  opacity: 1;
+  animation: mappingSignal 900ms var(--ease-out) both;
+}
+
+.source-workspace {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--color-bg-panel);
+}
+
+.source-workspace > .monaco-panel {
+  flex: 1;
+  min-width: 0;
+}
+
+.outline-panel {
+  display: flex;
+  flex: 0 0 clamp(168px, 34%, 220px);
+  flex-direction: column;
+  min-width: 0;
+  background: color-mix(in srgb, var(--color-bg-panel) 88%, var(--color-bg));
+  border-right: 1px solid var(--color-border);
+}
+
+.outline-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--panel-header-h);
+  padding: 0 12px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.outline-panel__count {
+  min-width: 18px;
+  padding: 2px 5px;
+  border-radius: 99px;
+  background: var(--color-signal-dim);
+  color: var(--color-signal);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-align: center;
+}
+
+.document-outline {
+  flex: 1;
+  min-height: 0;
+  padding: 8px 6px 16px;
+  overflow: auto;
+}
+
+.document-outline__tree,
+.document-outline__tree ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.document-outline__empty {
+  padding: 16px 10px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.outline-node {
+  display: flex;
+  align-items: center;
+  height: 27px;
+  padding-right: 5px;
+  padding-left: calc(4px + var(--outline-depth) * 12px);
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+}
+
+.outline-node:hover {
+  background: var(--color-btn-hover);
+  color: var(--color-text-primary);
+}
+
+.outline-node--selected {
+  color: var(--color-text-primary);
+  background: linear-gradient(90deg, var(--color-accent-dim), rgba(117, 111, 242, 0.05));
+  box-shadow: inset 2px 0 var(--color-accent);
+}
+
+.outline-node__toggle,
+.outline-node__spacer {
+  display: grid;
+  width: 18px;
+  height: 20px;
+  flex: 0 0 18px;
+  padding: 0;
+  place-items: center;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 0;
+}
+
+.outline-node__toggle svg {
+  width: 11px;
+  height: 11px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+[aria-expanded="true"] > .outline-node .outline-node__toggle svg {
+  transform: rotate(90deg);
+}
+
+.outline-node__target {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  height: 100%;
+  flex: 1;
+  gap: 4px;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+}
+
+.outline-node__tag {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outline-node__detail {
+  overflow: hidden;
+  color: var(--color-signal);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  opacity: 0.78;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monaco-panel__header,
+.preview-panel__header {
+  gap: 10px;
+  padding: 0 12px;
+  background: var(--color-bg-panel-header);
+}
+
+.monaco-panel__label,
+.preview-panel__label {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.075em;
+}
+
+.selection-trail {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 34vw;
+  overflow: hidden;
+  -webkit-app-region: no-drag;
+}
+
+.selection-trail__segment {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.selection-trail__segment button {
+  overflow: hidden;
+  max-width: 104px;
+  padding: 2px 4px;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selection-trail__segment:last-child button {
+  color: var(--color-signal);
+}
+
+.selection-trail__segment button:hover {
+  background: var(--color-signal-dim);
+  color: var(--color-text-primary);
+}
+
+.selection-trail__separator {
+  color: var(--color-text-muted);
+  font-size: 9px;
+  opacity: 0.5;
+}
+
+.selection-trail__hint {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 450;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.preview-panel {
+  background:
+    linear-gradient(rgba(25, 28, 34, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(25, 28, 34, 0.025) 1px, transparent 1px),
+    var(--color-bg-preview);
+  background-size: 20px 20px;
+}
+
+.preview-panel__content {
+  background: #fff;
+  box-shadow: inset 0 1px rgba(0, 0, 0, 0.04);
+}
+
+body.theme-light .app-titlebar {
+  background:
+    linear-gradient(90deg, rgba(98, 91, 234, 0.05), transparent 28%),
+    var(--color-bg);
+}
+
+body.theme-light .toolbar-btn--primary {
+  color: #fff;
+}
+
+@container (max-width: 420px) {
+  .outline-panel {
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 20;
+    width: min(230px, 84%);
+    box-shadow: 18px 0 36px rgba(0, 0, 0, 0.28);
+  }
+}
+
+@media (max-width: 1040px) {
+  .app-titlebar__stats,
+  .selection-trail__hint,
+  .app-titlebar__parse-time {
+    display: none;
+  }
+
+  .app-titlebar__right {
+    gap: 4px;
+  }
+}
+
+@media (max-width: 860px) {
+  .toolbar-btn--primary span,
+  .menubar-btn {
+    display: none;
+  }
+
+  .toolbar-btn--primary {
+    width: 28px;
+    padding: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes mappingSignal {
+  0% { transform: translate(-50%, -50%) scaleY(0.45); opacity: 0; }
+  45% { transform: translate(-50%, -50%) scaleY(1.18); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scaleY(1); opacity: 0.9; }
+}
+
 /* ── 历史记录 HistoryModal ────────────────────────────────── */
 .history-modal {
   width: 480px;
@@ -1036,7 +1590,7 @@ body {
     display: none !important;
   }
 
-  /* 使外部容器布局变为普通流，以便铺满页面并自动分页 */
+  /* 浏览器调试模式的回退打印布局；桌面端会在隔离预览文档自身打印。 */
   html, body, .app, .app-main, .split-view, .split-panel--right, .preview-panel, .preview-panel__content {
     display: block !important;
     position: static !important;
@@ -1050,12 +1604,4 @@ body {
     box-shadow: none !important;
   }
 
-  /* 打印时预览内容包裹层 */
-  .ast-renderer {
-    width: 100% !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
 }
-
-

@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import type * as Monaco from "monaco-editor";
 import { parseHTML } from "@/core/ast-parser";
+import { shouldParseInWorker } from "@ainx/hylo-core";
 import { NodeMapManager } from "@/core/node-map";
 import { SyncManager } from "@/core/sync-manager";
 import { eventBus } from "@/core/event-bus";
@@ -34,10 +35,45 @@ export function useEditor(initialContent: string) {
   const monacoEditorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const pendingContentRef = useRef<string | null>(null);
   const savedContentRef = useRef(initialContent);
+  const parserWorkerRef = useRef<Worker | null>(null);
+  const parserWorkerAvailableRef = useRef(true);
+  const pendingWorkerParseRef = useRef<{ version: number; html: string } | null>(null);
+  const parseVersion = useRef(0);
 
   useEffect(() => {
     const nodeMap = nodeMapRef.current;
     syncManagerRef.current = new SyncManager(nodeMap, eventBus);
+    let parserWorker: Worker | null = null;
+    try {
+      parserWorker = new Worker(
+        new URL("../core/parser.worker.ts", import.meta.url),
+        { type: "module" },
+      );
+      parserWorkerRef.current = parserWorker;
+      parserWorker.onmessage = (
+        event: MessageEvent<{ version: number; result: ParseResult }>,
+      ) => {
+        if (event.data.version !== parseVersion.current) return;
+        pendingWorkerParseRef.current = null;
+        eventBus.emit("ast:parsed", { result: event.data.result });
+      };
+      const handleWorkerFailure = (event?: ErrorEvent | MessageEvent) => {
+        if (event instanceof ErrorEvent) event.preventDefault();
+        parserWorkerAvailableRef.current = false;
+        parserWorkerRef.current = null;
+        parserWorker?.terminate();
+        const pending = pendingWorkerParseRef.current;
+        pendingWorkerParseRef.current = null;
+        if (pending?.version === parseVersion.current) {
+          eventBus.emit("ast:parsed", { result: parseHTML(pending.html) });
+        }
+      };
+      parserWorker.onerror = handleWorkerFailure;
+      parserWorker.onmessageerror = handleWorkerFailure;
+    } catch {
+      parserWorkerAvailableRef.current = false;
+      parserWorkerRef.current = null;
+    }
 
     const off1 = eventBus.on("ast:parsed", ({ result }) => {
       nodeMap.update(result.nodeMap);
@@ -57,6 +93,9 @@ export function useEditor(initialContent: string) {
 
     return () => {
       off1(); off2(); off3();
+      parserWorker?.terminate();
+      parserWorkerRef.current = null;
+      pendingWorkerParseRef.current = null;
       syncManagerRef.current?.dispose();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -74,16 +113,42 @@ export function useEditor(initialContent: string) {
     []
   );
 
+  const parseContent = useCallback((html: string): ParseResult | null => {
+    const version = ++parseVersion.current;
+    if (
+      shouldParseInWorker(html.length) &&
+      parserWorkerAvailableRef.current &&
+      parserWorkerRef.current
+    ) {
+      pendingWorkerParseRef.current = { version, html };
+      nodeMapRef.current.clear();
+      setParseResult(null);
+      setHighlightedPreviewNodeId(null);
+      setHighlightedSourceRange(null);
+      try {
+        parserWorkerRef.current.postMessage({ version, html });
+      } catch {
+        parserWorkerAvailableRef.current = false;
+        parserWorkerRef.current = null;
+        pendingWorkerParseRef.current = null;
+        return parseHTML(html);
+      }
+      return null;
+    }
+    pendingWorkerParseRef.current = null;
+    return parseHTML(html);
+  }, []);
+
   // debounce 300ms 用于用户手动编辑
   const handleContentChange = useMemo(
     () =>
       debounce((newContent: string) => {
         setContent(newContent);
         setIsDirty(newContent !== savedContentRef.current);
-        const result = parseHTML(newContent);
-        eventBus.emit("ast:parsed", { result });
+        const result = parseContent(newContent);
+        if (result) eventBus.emit("ast:parsed", { result });
       }, 300),
-    []
+    [parseContent]
   );
 
   /**
@@ -91,7 +156,7 @@ export function useEditor(initialContent: string) {
    * 1. 同步更新 Monaco 编辑器内容（直接 setValue，无时序问题）
    * 2. 同步解析 AST，立即更新预览
    */
-  const loadContent = useCallback((newContent: string) => {
+  const loadContent = useCallback((newContent: string, markAsSaved = true) => {
     // 1. 立即更新 Monaco 编辑器（同步，避免 useEffect 时序问题）
     if (monacoEditorRef.current) {
       monacoEditorRef.current.setValue(newContent);
@@ -101,16 +166,18 @@ export function useEditor(initialContent: string) {
 
     // 2. 更新 React 状态
     setContent(newContent);
-    savedContentRef.current = newContent;
-    setIsDirty(false);
+    savedContentRef.current = markAsSaved ? newContent : "";
+    setIsDirty(!markAsSaved);
     setHighlightedPreviewNodeId(null);
     setHighlightedSourceRange(null);
 
-    // 3. 同步解析，立即刷新预览
-    const result = parseHTML(newContent);
-    nodeMapRef.current.update(result.nodeMap);
-    setParseResult(result);
-  }, []);
+    // 3. 小文件同步刷新；大文件交给 Worker，完成后经 ast:parsed 更新。
+    const result = parseContent(newContent);
+    if (result) {
+      nodeMapRef.current.update(result.nodeMap);
+      setParseResult(result);
+    }
+  }, [parseContent]);
 
   const handlePreviewClick = useCallback((nodeId: string) => {
     eventBus.emit("preview:click", { nodeId });

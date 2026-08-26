@@ -14,6 +14,8 @@ interface SplitViewProps {
   minPanelWidth?: number;
   /** 布局模式：双栏 (both) | 仅编辑器 (editor) | 仅预览 (preview) */
   layoutMode?: "both" | "editor" | "preview";
+  /** 是否正在展示源码与预览的节点映射 */
+  mappingActive?: boolean;
 }
 
 export function SplitView({
@@ -22,6 +24,7 @@ export function SplitView({
   initialRatio = 0.5,
   minPanelWidth = 200,
   layoutMode = "both",
+  mappingActive = false,
 }: SplitViewProps) {
   const [ratio, setRatio] = useState(initialRatio);
   const [dragging, setDragging] = useState(false);
@@ -85,7 +88,7 @@ export function SplitView({
   }
 
   return (
-    <div ref={containerRef} className="split-view">
+    <div ref={containerRef} className={`split-view ${mappingActive ? "split-view--mapping-active" : ""}`}>
       {/* 左侧面板 */}
       <div
         className="split-panel split-panel--left"

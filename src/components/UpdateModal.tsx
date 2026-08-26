@@ -4,6 +4,8 @@ import { relaunch } from "@tauri-apps/plugin-process";
 import { t, Locale } from "../i18n";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
+const isTauriRuntime = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
 export interface UpdateModalRef {
   checkUpdates: (isManual: boolean) => Promise<void>;
 }
@@ -60,6 +62,7 @@ export const UpdateModal = forwardRef<UpdateModalRef, UpdateModalProps>(({ local
 
   // 启动自动检测更新 (静默检查)
   useEffect(() => {
+    if (!isTauriRuntime) return;
     if (import.meta.env.VITE_APP_STORE === "true") return;
     const timer = setTimeout(() => {
       checkUpdates(false);

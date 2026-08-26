@@ -15,7 +15,7 @@ interface AboutModalProps {
 }
 
 export function AboutModal({ isOpen, locale, theme, onClose }: AboutModalProps) {
-  const [version, setVersion] = useState("0.1.8");
+  const [version, setVersion] = useState("0.1.20");
 
   useEffect(() => {
     if (isOpen) {

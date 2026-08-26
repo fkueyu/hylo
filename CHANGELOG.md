@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.20] - 2026-08-26
+
+### 新增
+- 新增 AI HTML 审阅工作台、文档结构树、面包屑导航、稳定节点映射及大文档后台解析。
+- 新增与 VS Code 扩展一致的安全预览和交互预览模式。
+- 支持直接粘贴 AI 生成的 HTML，并自动清理 Markdown 代码围栏。
+
+### 修复
+- 强化预览沙箱隔离、消息校验与交互脚本生命周期管理。
+- 改进 `html`、`head`、`body` 根元素的 CSS 兼容性和双向定位。
+- 修复长文档 PDF 打印截断，并为 Word 导出增加原子落盘保护。
+
 ## [0.1.19] - 2026-07-02
 
 ### Added / 新增

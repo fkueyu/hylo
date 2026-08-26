@@ -22,6 +22,10 @@ export function useContextMenu() {
     });
   }, []);
 
+  const openContextMenuAt = useCallback((x: number, y: number, nodeId?: string) => {
+    setMenuData({ visible: true, x, y, nodeId });
+  }, []);
+
   const closeContextMenu = useCallback(() => {
     setMenuData((prev) => (prev.visible ? { ...prev, visible: false } : prev));
   }, []);
@@ -35,7 +39,7 @@ export function useContextMenu() {
     };
   }, [closeContextMenu]);
 
-  return { menuData, openContextMenu, closeContextMenu };
+  return { menuData, openContextMenu, openContextMenuAt, closeContextMenu };
 }
 
 export type ContextMenuItem = 

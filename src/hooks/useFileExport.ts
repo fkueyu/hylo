@@ -1,10 +1,10 @@
 import { useCallback } from "react";
 import { save } from "@tauri-apps/plugin-dialog";
-import { writeFile } from "@tauri-apps/plugin-fs";
 import { downloadDir, join } from "@tauri-apps/api/path";
 import type { Locale } from "@/i18n";
 import { t } from "@/i18n";
-import HTMLtoDOCX from "html-to-docx";
+import { normalizeExportDocument } from "@ainx/hylo-core";
+import { eventBus } from "@/core/event-bus";
 
 interface UseFileExportOptions {
   locale: Locale;
@@ -16,13 +16,7 @@ export function useFileExport({ locale, onError, onSuccess }: UseFileExportOptio
   // 导出 PDF
   const exportPDF = useCallback(async () => {
     try {
-      const isTauri = typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__ !== undefined;
-      if (isTauri) {
-        const { invoke } = await import("@tauri-apps/api/core");
-        await invoke("export_pdf");
-      } else {
-        window.print();
-      }
+      eventBus.emit("preview:print", undefined);
       console.log("[useFileExport] PDF print dialog invoked successfully.");
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -36,20 +30,9 @@ export function useFileExport({ locale, onError, onSuccess }: UseFileExportOptio
       try {
         const isTauri = typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__ !== undefined;
 
-        // 构造完整的符合 html-to-docx 渲染要求的文档
-        const fullHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Export</title>
-</head>
-<body>
-  ${htmlContent}
-</body>
-</html>`;
-
-        // 转换成 Word
-        const docxBlob = await HTMLtoDOCX(fullHtml, undefined, {
+        const { default: HTMLtoDOCX } = await import("html-to-docx");
+        const normalizedHtml = normalizeExportDocument(htmlContent);
+        const docxBlob = await HTMLtoDOCX(normalizedHtml, undefined, {
           table: { row: { cantSplit: true } },
           footer: true,
           header: true,
@@ -78,7 +61,11 @@ export function useFileExport({ locale, onError, onSuccess }: UseFileExportOptio
           const arrayBuffer = await new Response(docxBlob).arrayBuffer();
           const uint8Array = new Uint8Array(arrayBuffer);
 
-          await writeFile(selected, uint8Array);
+          const { invoke } = await import("@tauri-apps/api/core");
+          await invoke("write_docx_atomic", {
+            targetPath: selected,
+            bytes: Array.from(uint8Array),
+          });
         } else {
           // 浏览器调试环境降级：通过 URL.createObjectURL 触发传统下载
           const url = URL.createObjectURL(docxBlob);

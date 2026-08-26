@@ -34,7 +34,7 @@
 - Produces: `isPreviewFrameMessage(value: unknown): value is PreviewFrameMessage`.
 - Produces: `createHostCsp(cspSource: string, nonce: string): string`.
 
-- [ ] **Step 1: Write failing policy tests**
+- [x] **Step 1: Write failing policy tests**
 
 ```ts
 test("untrusted workspaces always resolve to safe preview", () => {
@@ -52,12 +52,12 @@ test("frame messages reject unknown commands and malformed node IDs", () => {
 });
 ```
 
-- [ ] **Step 2: Run the focused test and confirm RED**
+- [x] **Step 2: Run the focused test and confirm RED**
 
 Run: `node --experimental-strip-types --test test/preview-security.test.ts`
 Expected: FAIL because `src/preview-security.ts` does not exist.
 
-- [ ] **Step 3: Implement the minimal pure security contract**
+- [x] **Step 3: Implement the minimal pure security contract**
 
 ```ts
 export type PreviewMode = "safe" | "interactive";
@@ -71,7 +71,7 @@ export function resolvePreviewMode(requested: PreviewMode, trusted: boolean): Pr
 }
 ```
 
-- [ ] **Step 4: Run focused and existing tests**
+- [x] **Step 4: Run focused and existing tests**
 
 Run: `npm test`
 Expected: all preview-security and document-structure tests pass.
@@ -92,7 +92,7 @@ Expected: all preview-security and document-structure tests pass.
 - Produces frame commands: `render`, `highlight`, and `set-mode` under channel `hylo-preview`.
 - Produces setting: `hylo.previewMode` with values `safe` and `interactive`, default `safe`.
 
-- [ ] **Step 1: Write failing renderer-contract tests**
+- [x] **Step 1: Write failing renderer-contract tests**
 
 ```js
 test("safe mode drops scripts, event handlers, and javascript URLs", () => {
@@ -107,12 +107,12 @@ test("interactive mode still removes inline event attributes", () => {
 });
 ```
 
-- [ ] **Step 2: Confirm the frame tests fail for missing exports**
+- [x] **Step 2: Confirm the frame tests fail for missing exports**
 
 Run: `node --test test/preview-frame.test.js`
 Expected: FAIL because `preview-frame.js` does not expose the contract.
 
-- [ ] **Step 3: Implement the sandboxed frame and narrow bridge**
+- [x] **Step 3: Implement the sandboxed frame and narrow bridge**
 
 The trusted shell creates:
 
@@ -122,15 +122,15 @@ The trusted shell creates:
 
 The frame runtime receives only channel-tagged commands, renders AST without `innerHTML`, excludes event attributes in both modes, excludes scripts and dangerous URLs in safe mode, and posts node IDs to the shell. The shell validates IDs through the extension-host NodeMap before moving the editor.
 
-- [ ] **Step 4: Add mode command, status UI, and Workspace Trust fallback**
+- [x] **Step 4: Add mode command, status UI, and Workspace Trust fallback**
 
 The extension resolves configured mode through `resolvePreviewMode(configured, vscode.workspace.isTrusted)`. A toolbar button toggles modes only in trusted workspaces and persists with `Workspace` configuration target.
 
-- [ ] **Step 5: Tighten host CSP and remove direct user-script execution**
+- [x] **Step 5: Tighten host CSP and remove direct user-script execution**
 
 Generate the host CSP through `createHostCsp`; the host loads only nonce-bearing extension scripts. Remove user AST rendering and `pendingScripts` execution from the trusted shell.
 
-- [ ] **Step 6: Run tests, typecheck, syntax checks, and build**
+- [x] **Step 6: Run tests, typecheck, syntax checks, and build**
 
 Run: `npm test`
 Run: `npm run typecheck`
@@ -151,7 +151,7 @@ Expected: all commands exit 0.
 - Produces: `sanitizePreviewAttributes(attrs, mode)` and `isPreviewFrameMessage(value)`.
 - Produces: `buildPreviewFrameDocument(options): string`.
 
-- [ ] **Step 1: Write failing desktop policy tests**
+- [x] **Step 1: Write failing desktop policy tests**
 
 ```ts
 test("safe frame document blocks user scripts and remote connections", () => {
@@ -164,16 +164,16 @@ test("safe attributes reject handlers and javascript URLs", () => {
 });
 ```
 
-- [ ] **Step 2: Confirm RED**
+- [x] **Step 2: Confirm RED**
 
 Run: `node --experimental-strip-types --test src/core/preview-security.test.ts`
 Expected: FAIL because the production module does not exist.
 
-- [ ] **Step 3: Implement minimal policy and frame-document generation**
+- [x] **Step 3: Implement minimal policy and frame-document generation**
 
 Frame HTML contains a mode-specific CSP, a runtime bridge, AST renderer, click handling, selection highlighting, and no host API references.
 
-- [ ] **Step 4: Run focused and full tests**
+- [x] **Step 4: Run focused and full tests**
 
 Run: `npm test`
 Expected: all document-structure and preview-security tests pass.
@@ -190,24 +190,24 @@ Expected: all document-structure and preview-security tests pass.
 - Consumes: `buildPreviewFrameDocument`, `PreviewMode`, and validated frame messages.
 - Preserves existing `PreviewPanelProps` selection and context-menu callbacks.
 
-- [ ] **Step 1: Add a failing source-level sandbox assertion**
+- [x] **Step 1: Add a failing source-level sandbox assertion**
 
 Add a test that reads `PreviewPanel.tsx` and asserts the iframe contains `sandbox="allow-scripts"` without `allow-same-origin`, and that `createPortal`/`ASTRenderer` are no longer used by the panel.
 
-- [ ] **Step 2: Confirm the assertion fails against the current Portal implementation**
+- [x] **Step 2: Confirm the assertion fails against the current Portal implementation**
 
 Run: `node --experimental-strip-types --test src/components/PreviewPanel.security.test.ts`
 Expected: FAIL on missing sandbox and retained Portal renderer.
 
-- [ ] **Step 3: Replace Portal rendering with the message-driven sandbox iframe**
+- [x] **Step 3: Replace Portal rendering with the message-driven sandbox iframe**
 
 Initialize the iframe from `buildPreviewFrameDocument`, post AST/highlight updates, validate `event.source`, validate the message shape, and preserve source navigation. Context-menu actions remain in the trusted host and only receive validated node IDs.
 
-- [ ] **Step 4: Add safe/interactive UI and localized copy**
+- [x] **Step 4: Add safe/interactive UI and localized copy**
 
 Default to safe mode, persist explicit interactive opt-in locally, explain blocked scripts once, and keep current outline/breadcrumb behavior.
 
-- [ ] **Step 5: Run tests and production build**
+- [x] **Step 5: Run tests and production build**
 
 Run: `npm test`
 Run: `npm run build`
@@ -230,23 +230,23 @@ Expected: tests and TypeScript/Vite build exit 0.
 - Release workflows require the exact verification commands from Tasks 2 and 4.
 - Production extension packages exclude `dist/*.map`; watch builds retain source maps.
 
-- [ ] **Step 1: Add release workflow assertions to the security tests**
+- [x] **Step 1: Add release workflow assertions to the security tests**
 
 Tests read workflow/build files and require `npm test`, appropriate type/build checks, conditional development source maps, and `dist/*.map` exclusion.
 
-- [ ] **Step 2: Confirm assertions fail against current workflows**
+- [x] **Step 2: Confirm assertions fail against current workflows**
 
 Run the two project test commands and confirm failures name the missing quality gates.
 
-- [ ] **Step 3: Add release gates and conditional source maps**
+- [x] **Step 3: Add release gates and conditional source maps**
 
 Hylo release runs tests and build before Tauri packaging. Extension publish runs tests, typecheck, build, and package inspection before publishing. `esbuild.js` sets `sourcemap: watch`; `.vscodeignore` excludes `dist/*.map`.
 
-- [ ] **Step 4: Replace inaccurate Shadow DOM claims**
+- [x] **Step 4: Replace inaccurate Shadow DOM claims**
 
 Document sandbox iframe isolation, safe default behavior, interactive opt-in, Workspace Trust behavior, and HTTPS-only remote resources.
 
-- [ ] **Step 5: Run full verification and package inspection**
+- [x] **Step 5: Run full verification and package inspection**
 
 Run in Hylo: `npm test`, `npm run build`, `git diff --check`.
 Run in hylo-vscode: `npm test`, `npm run typecheck`, `npm run build`, `npm run package`, `unzip -l extension.vsix`.
