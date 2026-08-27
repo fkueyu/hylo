@@ -6,6 +6,7 @@ const root = new URL("../../", import.meta.url);
 
 test("desktop release runs tests and frontend build before packaging", () => {
   const workflow = readFileSync(new URL(".github/workflows/release.yml", root), "utf8");
+  assert.match(workflow, /node-version:\s*22/);
   const testIndex = workflow.indexOf("run: npm test");
   const buildIndex = workflow.indexOf("run: npm run build");
   const packageIndex = workflow.indexOf("uses: tauri-apps/tauri-action");
