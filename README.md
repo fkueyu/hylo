@@ -1,3 +1,5 @@
+
+
 # Hylo ✦
 
 > **HTML 的 Typora** — 实时 HTML 预览与源码双向联动编辑器。
@@ -42,6 +44,11 @@ npm run tauri dev
 npm run tauri build
 ```
 打包成功后，将在 `src-tauri/target/release/bundle/` 下生成各平台对应的原生安装包（macOS 为 `.dmg`/`.app`，Windows 为 `.msi`）。
+
+### 运行测试 (Run Tests)
+```bash
+npm test
+```
 
 ---
 
