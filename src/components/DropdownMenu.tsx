@@ -20,24 +20,36 @@ export function DropdownMenu({ label, items }: DropdownMenuProps) {
         setOpen(false);
       }
     }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   return (
     <div className="menubar-item" ref={containerRef}>
-      <button 
+      <button
+        type="button"
         className="menubar-btn"
+        aria-haspopup="menu"
+        aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
         {label}
       </button>
-      
+
       {open && (
-        <div className="dropdown-menu">
+        <div className="dropdown-menu" role="menu">
           {items.map((item, i) => (
             <button
               key={i}
+              type="button"
+              role="menuitem"
               className="dropdown-item"
               onClick={() => {
                 item.onClick();

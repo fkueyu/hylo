@@ -3,12 +3,14 @@
 // 移除 value prop，改用 onEditorReady 暴露 editor 实例
 // ============================================================
 
-import { useRef, useCallback, useEffect } from "react";
+import { useRef, useCallback, useEffect, useState } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import type * as Monaco from "monaco-editor";
 import { ContextMenu, useContextMenu } from "@/components/ContextMenu";
 import { t } from "@/i18n";
 import type { Locale } from "@/i18n";
+import { ensureLocalMonaco } from "@/core/monaco-loader";
+import { readClipboardText, writeClipboardText } from "@/core/clipboard";
 import type { SourceLocation } from "@/types";
 
 interface MonacoPanelProps {
@@ -28,16 +30,35 @@ interface MonacoPanelProps {
   locale?: Locale;
 }
 
-function debounce<T extends unknown[]>(
-  fn: (...args: T) => void,
-  delay: number
-): (...args: T) => void {
-  let timer: ReturnType<typeof setTimeout>;
-  return (...args: T) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  };
-}
+// 固定 options 对象：避免每次渲染都触发 @monaco-editor/react 的 updateOptions
+const EDITOR_OPTIONS = {
+  fontSize: 13,
+  fontFamily: "'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace",
+  fontLigatures: true,
+  lineNumbers: "on" as const,
+  minimap: { enabled: true, scale: 0.75 },
+  scrollBeyondLastLine: false,
+  wordWrap: "on" as const,
+  tabSize: 2,
+  insertSpaces: true,
+  automaticLayout: true,
+  padding: { top: 12, bottom: 12 },
+  lineDecorationsWidth: 4,
+  renderLineHighlight: "line" as const,
+  smoothScrolling: true,
+  cursorBlinking: "smooth" as const,
+  cursorSmoothCaretAnimation: "on" as const,
+  scrollbar: {
+    vertical: "visible" as const,
+    horizontal: "auto" as const,
+    verticalScrollbarSize: 6,
+    horizontalScrollbarSize: 6,
+    useShadows: false,
+    verticalHasArrows: false,
+    horizontalHasArrows: false,
+  },
+  contextmenu: false,
+};
 
 export function MonacoPanel({
   initialContent = "",
@@ -52,16 +73,37 @@ export function MonacoPanel({
 }: MonacoPanelProps) {
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof Monaco | null>(null);
+  // 本地 Monaco 是异步 chunk，加载完成前先渲染占位，避免向 CDN 请求
+  const [isMonacoReady, setIsMonacoReady] = useState(false);
   const { menuData, openContextMenu, closeContextMenu } = useContextMenu();
+
+  useEffect(() => () => {
+    if (cursorFrameRef.current !== null) cancelAnimationFrame(cursorFrameRef.current);
+    cursorFrameRef.current = null;
+    pendingCursorRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    ensureLocalMonaco()
+      .catch((error) => console.error("[MonacoPanel] Failed to load local Monaco:", error))
+      .finally(() => {
+        if (!cancelled) setIsMonacoReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const decorationsRef = useRef<string[]>([]);
   const isApplyingHighlight = useRef(false);
+  const pendingCursorRef = useRef<Monaco.Position | null>(null);
+  const cursorFrameRef = useRef<number | null>(null);
 
-  // debounce 300ms，仅用于用户手动编辑
-  const debouncedContentChange = useRef(
-    debounce((content: string) => {
-      onContentChange?.(content);
-    }, 300)
-  ).current;
+  // 防抖统一放在 useEditor 里，这里直接上报，避免双重防抖（~600ms 延迟）
+  const onContentChangeRef = useRef(onContentChange);
+  useEffect(() => {
+    onContentChangeRef.current = onContentChange;
+  }, [onContentChange]);
 
   const handleMount: OnMount = useCallback(
     (editor, monaco) => {
@@ -71,20 +113,26 @@ export function MonacoPanel({
       // 暴露 editor 实例给外部（用于 loadContent 直接 setValue）
       onEditorReady?.(editor);
 
-      // 监听光标位置变化
+      // 监听光标位置变化：用 rAF 合并高频事件，避免每次按键都触发整棵组件树更新
       editor.onDidChangeCursorPosition((e) => {
         if (isApplyingHighlight.current) return;
         const position = e.position;
-        const model = editor.getModel();
-        if (!model) return;
-        const offset = model.getOffsetAt(position);
-        onCursorChange?.(position.lineNumber, position.column, offset);
+        pendingCursorRef.current = position;
+        if (cursorFrameRef.current !== null) return;
+        cursorFrameRef.current = requestAnimationFrame(() => {
+          cursorFrameRef.current = null;
+          const latest = pendingCursorRef.current;
+          const model = editor.getModel();
+          if (!latest || !model) return;
+          const offset = model.getOffsetAt(latest);
+          onCursorChange?.(latest.lineNumber, latest.column, offset);
+        });
       });
 
       // 初始触发一次解析
       onContentChange?.(editor.getValue());
     },
-    [initialContent, onContentChange, onCursorChange, onEditorReady, openContextMenu]
+    [onContentChange, onCursorChange, onEditorReady]
   );
 
   // 响应外部 highlightRange：定位 + 高亮
@@ -137,41 +185,18 @@ export function MonacoPanel({
           openContextMenu(e.nativeEvent);
         }}
       >
-        <Editor
-          defaultLanguage="html"
-          defaultValue={initialContent}
-          theme={theme === "dark" ? "vs-dark" : "light"}
-          onMount={handleMount}
-          onChange={(v) => debouncedContentChange(v ?? "")}
-          options={{
-            fontSize: 13,
-            fontFamily: "'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace",
-            fontLigatures: true,
-            lineNumbers: "on",
-            minimap: { enabled: true, scale: 0.75 },
-            scrollBeyondLastLine: false,
-            wordWrap: "on",
-            tabSize: 2,
-            insertSpaces: true,
-            automaticLayout: true,
-            padding: { top: 12, bottom: 12 },
-            lineDecorationsWidth: 4,
-            renderLineHighlight: "line",
-            smoothScrolling: true,
-            cursorBlinking: "smooth",
-            cursorSmoothCaretAnimation: "on",
-            scrollbar: {
-              vertical: "visible",
-              horizontal: "auto",
-              verticalScrollbarSize: 6,
-              horizontalScrollbarSize: 6,
-              useShadows: false,
-              verticalHasArrows: false,
-              horizontalHasArrows: false,
-            },
-            contextmenu: false,
-          }}
-        />
+        {isMonacoReady ? (
+          <Editor
+            defaultLanguage="html"
+            defaultValue={initialContent}
+            theme={theme === "dark" ? "vs-dark" : "light"}
+            onMount={handleMount}
+            onChange={(v) => onContentChangeRef.current?.(v ?? "")}
+            options={EDITOR_OPTIONS}
+          />
+        ) : (
+          <div className="monaco-panel__loading">{t(locale, "editorLoading")}</div>
+        )}
       </div>
       {menuData.visible && (
         <ContextMenu
@@ -197,7 +222,7 @@ export function MonacoPanel({
                 const model = editor.getModel();
                 if (selection && model && !selection.isEmpty()) {
                   const text = model.getValueInRange(selection);
-                  navigator.clipboard.writeText(text).then(() => {
+                  void writeClipboardText(text).then(() => {
                     editor.executeEdits("context-menu", [{ range: selection, text: "", forceMoveMarkers: true }]);
                   });
                 }
@@ -214,7 +239,7 @@ export function MonacoPanel({
                 const model = editor.getModel();
                 if (selection && model && !selection.isEmpty()) {
                   const text = model.getValueInRange(selection);
-                  navigator.clipboard.writeText(text);
+                  void writeClipboardText(text);
                 }
                 closeContextMenu();
               },
@@ -225,7 +250,7 @@ export function MonacoPanel({
                 const editor = editorRef.current;
                 if (!editor) return;
                 editor.focus();
-                navigator.clipboard.readText().then((text) => {
+                void readClipboardText().then((text) => {
                   const selection = editor.getSelection();
                   if (selection && text) {
                     editor.executeEdits("context-menu", [{ range: selection, text: text, forceMoveMarkers: true }]);

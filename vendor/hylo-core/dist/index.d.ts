@@ -39,7 +39,11 @@ export interface NodeTrailItem {
 
 export type NodeIdentityKind = "document" | "doctype" | "element" | "text" | "comment";
 
-export function createNodeId(kind: NodeIdentityKind, nodeName: string, structuralPath: readonly number[]): string;
+export function createNodeId(
+  kind: NodeIdentityKind,
+  nodeName: string,
+  structuralPath: readonly Array<string | number>,
+): string;
 export function parseHTML(html: string): ParseResult;
 export class NodeMapManager {
   update(map: Map<string, SourceLocation>): void;

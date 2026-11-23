@@ -29,10 +29,79 @@ function getNodeKind(nodeName) {
   return "element";
 }
 
-function traverseNode(node, nodeMap, counter, structuralPath) {
+const SEGMENT_SAFE = /[^a-z0-9_-]+/g;
+
+function sanitizeSegment(value) {
+  return (
+    String(value ?? "")
+      .toLowerCase()
+      .replace(SEGMENT_SAFE, "_")
+      .replace(/^_+|_+$/g, "") || "x"
+  );
+}
+
+/**
+ * 同一父节点下的兄弟上下文：同标签计数 + 已占用 segment（防重复 id 冲突）。
+ */
+function createSiblingContext() {
+  return { counts: new Map(), taken: new Set() };
+}
+
+function nextCount(context, key) {
+  const next = (context.counts.get(key) ?? 0) + 1;
+  context.counts.set(key, next);
+  return next;
+}
+
+/**
+ * 稳定节点 ID 段：
+ * - 元素带 id 属性 → `${tag}_id_${id}`，插入/删除任何兄弟都不影响；
+ * - 否则用「同标签序号」`${tag}_${n}`，插入其它标签不会影响；
+ * - 文本/注释用各自类型的序号，元素属性/文本编辑不会影响。
+ *
+ * 已知边界：在元素前面插入「同标签」兄弟时，序号会变化（无法在无锚点情况下避免）。
+ */
+function createSegment(node, kind, context) {
+  let base;
+  if (kind === "element") {
+    const tag = sanitizeSegment(node.tagName || node.nodeName || "node");
+    const idAttr = (node.attrs ?? []).find((attr) => attr.name === "id");
+    if (idAttr && String(idAttr.value).trim()) {
+      base = `${tag}_id_${sanitizeSegment(idAttr.value)}`;
+    } else {
+      base = `${tag}_${nextCount(context, tag)}`;
+    }
+  } else if (kind === "text") {
+    base = `text_${nextCount(context, "text")}`;
+  } else if (kind === "comment") {
+    base = `comment_${nextCount(context, "comment")}`;
+  } else if (kind === "doctype") {
+    base = "doctype";
+  } else {
+    base = "document";
+  }
+  let segment = base;
+  let suffix = 2;
+  while (context.taken.has(segment)) {
+    segment = `${base}__${suffix}`;
+    suffix += 1;
+  }
+  context.taken.add(segment);
+  return segment;
+}
+
+function traverseChildren(nodes, nodeMap, counter, parentSegments) {
+  const context = createSiblingContext();
+  return (nodes ?? []).map((child) =>
+    traverseNode(child, nodeMap, counter, parentSegments, context));
+}
+
+function traverseNode(node, nodeMap, counter, parentSegments, context) {
   const nodeName = node.nodeName ?? "";
   const kind = getNodeKind(nodeName);
-  const nodeId = createNodeId(kind, nodeName, structuralPath);
+  const segment = createSegment(node, kind, context);
+  const segments = [...parentSegments, segment];
+  const nodeId = createNodeId(kind, nodeName, segments);
   const sourceLocation = extractLocation(node.sourceCodeLocation);
   counter.count += 1;
   if (sourceLocation) nodeMap.set(nodeId, sourceLocation);
@@ -41,8 +110,7 @@ function traverseNode(node, nodeMap, counter, structuralPath) {
     return {
       nodeId,
       type: "document",
-      children: (node.childNodes ?? []).map((child, index) =>
-        traverseNode(child, nodeMap, counter, [...structuralPath, index])),
+      children: traverseChildren(node.childNodes, nodeMap, counter, segments),
       sourceLocation,
     };
   }
@@ -61,8 +129,7 @@ function traverseNode(node, nodeMap, counter, structuralPath) {
     type: "element",
     tagName: (node.tagName ?? nodeName).toLowerCase(),
     attrs,
-    children: (node.childNodes ?? []).map((child, index) =>
-      traverseNode(child, nodeMap, counter, [...structuralPath, index])),
+    children: traverseChildren(node.childNodes, nodeMap, counter, segments),
     sourceLocation,
   };
 }
@@ -72,7 +139,7 @@ export function parseHTML(html) {
   const ast = parse(html, { sourceCodeLocationInfo: true });
   const nodeMap = new Map();
   const counter = { count: 0 };
-  const root = traverseNode(ast, nodeMap, counter, []);
+  const root = traverseNode(ast, nodeMap, counter, [], createSiblingContext());
   return {
     root,
     nodeMap,

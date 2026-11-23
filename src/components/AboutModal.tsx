@@ -15,7 +15,7 @@ interface AboutModalProps {
 }
 
 export function AboutModal({ isOpen, locale, theme, onClose }: AboutModalProps) {
-  const [version, setVersion] = useState("0.1.20");
+  const [version, setVersion] = useState("0.1.21");
 
   useEffect(() => {
     if (isOpen) {
@@ -24,6 +24,15 @@ export function AboutModal({ isOpen, locale, theme, onClose }: AboutModalProps) 
         .catch((err) => console.error("Failed to get app version", err));
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -37,7 +46,13 @@ export function AboutModal({ isOpen, locale, theme, onClose }: AboutModalProps) 
 
   return (
     <div className="update-overlay" onClick={onClose}>
-      <div className="update-modal about-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="update-modal about-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t(locale, "aboutSlogan")}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="about-modal__content">
           <div className="about-modal__logo-container">
             <img

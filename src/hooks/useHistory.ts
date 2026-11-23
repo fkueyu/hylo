@@ -1,8 +1,8 @@
 // ============================================================
-// useHistory.ts — 历史记录管理 Hook（localStorage 持久化）
+// useHistory.ts — 打开历史管理（localStorage 持久化 + 数据校验）
 // ============================================================
 
-import { useState, useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export interface HistoryItem {
   path: string;
@@ -13,56 +13,65 @@ export interface HistoryItem {
 const STORAGE_KEY = "hylo-open-history";
 const MAX_HISTORY = 30;
 
-export function useHistory() {
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+/** 读取并校验历史记录：损坏/旧格式数据不能让历史弹窗崩溃。 */
+function loadHistory(): HistoryItem[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return [];
+    const parsed: unknown = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item): item is HistoryItem => {
+        if (!item || typeof item !== "object") return false;
+        const candidate = item as Partial<HistoryItem>;
+        return (
+          typeof candidate.path === "string" &&
+          candidate.path.length > 0 &&
+          typeof candidate.name === "string" &&
+          typeof candidate.timestamp === "number" &&
+          Number.isFinite(candidate.timestamp)
+        );
+      })
+      .slice(0, MAX_HISTORY);
+  } catch (error) {
+    console.error("Failed to load history", error);
+    return [];
+  }
+}
 
-  // 从 localStorage 加载
+export function useHistory() {
+  // 惰性初始化，避免“先写空数组再读”的竞态
+  const [history, setHistory] = useState<HistoryItem[]>(loadHistory);
+
+  // 持久化放在 effect 中（不在 setState updater 里产生副作用）
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setHistory(JSON.parse(stored));
-      }
-    } catch (e) {
-      console.error("Failed to load history", e);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    } catch (error) {
+      console.error("Failed to persist history", error);
     }
-  }, []);
+  }, [history]);
 
-  // 添加到历史记录
   const addHistory = useCallback((path: string, name: string) => {
     setHistory((prev) => {
-      // 过滤掉同名同路径的，防止重复
       const filtered = prev.filter((item) => item.path !== path);
-      const newItem: HistoryItem = {
-        path,
-        name,
-        timestamp: Date.now(),
-      };
-      const updated = [newItem, ...filtered].slice(0, MAX_HISTORY);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      return updated;
+      const newItem: HistoryItem = { path, name, timestamp: Date.now() };
+      return [newItem, ...filtered].slice(0, MAX_HISTORY);
     });
   }, []);
 
-  // 清空历史记录
   const clearHistory = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
     setHistory([]);
   }, []);
 
-  // 删除单条记录（用于文件不存在时清理）
   const removeHistory = useCallback((path: string) => {
-    setHistory((prev) => {
-      const updated = prev.filter((item) => item.path !== path);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      return updated;
-    });
+    setHistory((prev) => prev.filter((item) => item.path !== path));
   }, []);
 
-  return {
-    history,
-    addHistory,
-    clearHistory,
-    removeHistory,
-  };
+  return { history, addHistory, clearHistory, removeHistory };
 }

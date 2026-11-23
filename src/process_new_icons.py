@@ -23,6 +23,14 @@ def make_full_bleed_squircle(input_path, output_path, size=1024, radius=200):
     output.save(output_path, "PNG")
     print(f"Created full-bleed squircle icon: {output_path}")
 
+def make_ui_logo(input_path, output_path, size=192):
+    """标题栏/关于页使用的 UI logo：按实际显示尺寸输出，保持透明背景。"""
+    im = Image.open(input_path).convert("RGBA")
+    im = im.resize((size, size), Image.Resampling.LANCZOS)
+    im.save(output_path, "PNG", optimize=True)
+    print(f"Created UI logo: {output_path}")
+
+
 def make_macos_app_icon(input_path, output_path):
     """
     Creates a standard macOS app icon with margins and drop-shadow.
@@ -73,8 +81,9 @@ def make_macos_app_icon(input_path, output_path):
 if __name__ == "__main__":
     # Base paths
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    dark_src = os.path.join(base_dir, "icon-dark.png")
-    light_src = os.path.join(base_dir, "icon-light.png")
+    design_dir = os.path.join(base_dir, "design")
+    dark_src = os.path.join(design_dir, "icon-dark.png")
+    light_src = os.path.join(design_dir, "icon-light.png")
     
     # Output targets
     # 1. Web icons
@@ -89,13 +98,12 @@ if __name__ == "__main__":
     
     # 3. macOS App Icon Source (used to feed tauri icon generator)
     # We will use the dark icon as the main app icon
-    tauri_src_icon = os.path.join(base_dir, "tauri-src-icon.png")
+    tauri_src_icon = os.path.join(design_dir, "tauri-src-icon.png")
     
-    # 4. App UI logo files (squircle)
-    app_public_logo = os.path.join(base_dir, "public", "logo.png")
+    # 4. App UI logo files (squircle, 192px: 标题栏 19px / 关于页 72px 的 2x 资源)
     app_public_logo_dark = os.path.join(base_dir, "public", "logo-dark.png")
     app_public_logo_light = os.path.join(base_dir, "public", "logo-light.png")
-    app_root_squircle = os.path.join(base_dir, "logo_squircle.png")
+    app_root_squircle = os.path.join(design_dir, "logo_squircle.png")
     
     # Process icons
     # A. Web icons (full-bleed squircles)
@@ -108,10 +116,9 @@ if __name__ == "__main__":
     # C. macOS App Icon Source (with shadow and margins, using the light icon)
     make_macos_app_icon(light_src, tauri_src_icon)
     
-    # D. App UI logos
-    make_full_bleed_squircle(light_src, app_public_logo)
-    make_full_bleed_squircle(dark_src, app_public_logo_dark)
-    make_full_bleed_squircle(light_src, app_public_logo_light)
+    # D. App UI logos（只输出实际使用尺寸，避免把 1MB+ 的 1024px 图塞进安装包）
+    make_ui_logo(dark_src, app_public_logo_dark)
+    make_ui_logo(light_src, app_public_logo_light)
     make_full_bleed_squircle(light_src, app_root_squircle)
     
     print("All icons successfully generated!")

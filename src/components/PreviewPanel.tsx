@@ -1,14 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { ask, message } from "@tauri-apps/plugin-dialog";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { ContextMenu, useContextMenu } from "@/components/ContextMenu";
 import {
   buildPreviewFrameDocument,
   isPreviewFrameMessage,
+  type PreviewDiagnostics,
   type PreviewMode,
 } from "@/core/preview-security";
 import { t, type Locale } from "@/i18n";
 import type { HyloNode } from "@/types";
-import { eventBus } from "@/core/event-bus";
 
 interface PreviewPanelProps {
   astRoot: HyloNode | null;
@@ -20,13 +22,12 @@ interface PreviewPanelProps {
   headerRight?: React.ReactNode;
   onContextMenuAction?: (actionId: string, nodeId?: string) => void;
   filepath?: string | null;
-}
-
-const PREVIEW_MODE_KEY = "hylo.previewMode";
-const INTERACTIVE_NOTICE_KEY = "hylo.interactivePreviewAcknowledged";
-
-function readPreviewMode(): PreviewMode {
-  return localStorage.getItem(PREVIEW_MODE_KEY) === "interactive" ? "interactive" : "safe";
+  /** 打印时按内容真实高度展开 iframe，保证长文档完整输出 */
+  printing?: boolean;
+  /** 预览内就地编辑文本后，把新文本写回源码 */
+  onTextEdit?: (nodeId: string, text: string) => void;
+  /** 文档标识变化（打开/新建/切换文件）时把预览模式重置回安全模式 */
+  documentKey?: string;
 }
 
 function collectNodeIds(root: HyloNode | null): Set<string> {
@@ -49,13 +50,23 @@ export function PreviewPanel({
   headerRight,
   onContextMenuAction,
   filepath,
+  printing = false,
+  documentKey,
+  onTextEdit,
 }: PreviewPanelProps) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const frameReadyRef = useRef(false);
   const highlightedNodeIdRef = useRef(highlightedNodeId);
-  const [previewMode, setPreviewMode] = useState<PreviewMode>(readPreviewMode);
+  // 交互预览是“按文档信任”的决定：每次打开新文档都回到安全预览
+  const [previewMode, setPreviewMode] = useState<PreviewMode>("safe");
+  const [contentHeight, setContentHeight] = useState<number>(0);
+  const [diagnostics, setDiagnostics] = useState<PreviewDiagnostics | null>(null);
   const { menuData, openContextMenuAt, closeContextMenu } = useContextMenu();
   const nodeIds = useMemo(() => collectNodeIds(astRoot), [astRoot]);
+
+  useEffect(() => {
+    setPreviewMode("safe");
+  }, [documentKey]);
 
   const baseHref = useMemo(() => {
     if (!filepath) return null;
@@ -99,6 +110,7 @@ export function PreviewPanel({
 
   useEffect(() => {
     frameReadyRef.current = false;
+    setDiagnostics(null);
   }, [frameDocument]);
 
   useEffect(() => {
@@ -122,6 +134,35 @@ export function PreviewPanel({
         return;
       }
 
+      if (event.data.type === "frame-height") {
+        setContentHeight(event.data.height);
+        return;
+      }
+
+      if (event.data.type === "diagnostics") {
+        setDiagnostics(event.data);
+        return;
+      }
+
+      if (event.data.type === "open-link") {
+        const href = event.data.href;
+        if (/^https?:/i.test(href)) {
+          openUrl(href).catch(async (error) => {
+            console.error("Failed to open preview link:", error);
+            await message(t(locale, "linkOpenFailedDesc"), {
+              title: t(locale, "linkOpenFailed"),
+              kind: "error",
+            });
+          });
+        }
+        return;
+      }
+
+      if (event.data.type === "text-edit") {
+        onTextEdit?.(event.data.nodeId, event.data.text);
+        return;
+      }
+
       const nodeId = event.data.nodeId;
       if (nodeId && !nodeIds.has(nodeId)) return;
       if (event.data.type === "node-selected") {
@@ -137,7 +178,7 @@ export function PreviewPanel({
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [nodeIds, onNodeClick, openContextMenuAt, sendRender]);
+  }, [nodeIds, onNodeClick, openContextMenuAt, sendRender, locale, onTextEdit]);
 
   useEffect(() => {
     postToFrame({
@@ -147,31 +188,55 @@ export function PreviewPanel({
     });
   }, [highlightedNodeId, postToFrame]);
 
-  useEffect(() => eventBus.on("preview:print", () => {
-    postToFrame({ type: "print" });
-  }), [postToFrame]);
-
-  const togglePreviewMode = () => {
+  const togglePreviewMode = async () => {
     const nextMode: PreviewMode = previewMode === "safe" ? "interactive" : "safe";
-    if (
-      nextMode === "interactive"
-      && localStorage.getItem(INTERACTIVE_NOTICE_KEY) !== "true"
-    ) {
-      if (!window.confirm(t(locale, "interactivePreviewConfirm"))) return;
-      localStorage.setItem(INTERACTIVE_NOTICE_KEY, "true");
+    if (nextMode === "interactive") {
+      const accepted = await ask(t(locale, "interactivePreviewConfirm"), {
+        title: t(locale, "interactivePreviewTitle"),
+        kind: "warning",
+        okLabel: t(locale, "confirmOk"),
+        cancelLabel: t(locale, "confirmCancel"),
+      });
+      if (!accepted) return;
     }
-    localStorage.setItem(PREVIEW_MODE_KEY, nextMode);
     setPreviewMode(nextMode);
   };
 
+  const diagnosticsParts: string[] = [];
+  if (diagnostics) {
+    if (diagnostics.scripts > 0) {
+      diagnosticsParts.push(`${diagnostics.scripts} ${t(locale, "diagnosticsScripts")}`);
+    }
+    if (diagnostics.remoteAssets > 0) {
+      diagnosticsParts.push(`${diagnostics.remoteAssets} ${t(locale, "diagnosticsRemote")}`);
+    }
+    if (diagnostics.embeds > 0) {
+      diagnosticsParts.push(`${diagnostics.embeds} ${t(locale, "diagnosticsEmbeds")}`);
+    }
+  }
+  const diagnosticsSummary = diagnosticsParts.join(" · ");
+  const showDiagnostics = previewMode === "safe" && diagnosticsParts.length > 0;
+
   return (
-    <div className="preview-panel">
+    <div className={`preview-panel ${printing ? "preview-panel--printing" : ""}`}>
       {label && (
         <div className="preview-panel__header">
           <span className="preview-panel__label">{label}</span>
           <span className="preview-panel__security-hint">
-            {previewMode === "safe" ? t(locale, "safePreviewHint") : ""}
+            {previewMode === "safe"
+              ? `${t(locale, "safePreviewHint")} · ${t(locale, "inlineEditHint")}`
+              : t(locale, "inlineEditHint")}
           </span>
+          {showDiagnostics && (
+            <button
+              type="button"
+              className="preview-panel__diagnostics"
+              onClick={() => void togglePreviewMode()}
+              title={t(locale, "diagnosticsEnableHint")}
+            >
+              ⚠ {t(locale, "diagnosticsBlocked")} {diagnosticsSummary}
+            </button>
+          )}
           <button
             type="button"
             className={`preview-panel__mode ${previewMode === "interactive" ? "is-interactive" : ""}`}
@@ -190,6 +255,7 @@ export function PreviewPanel({
         sandbox="allow-scripts"
         srcDoc={frameDocument}
         onLoad={handleFrameLoad}
+        style={printing && contentHeight > 0 ? { height: `${contentHeight}px` } : undefined}
         title={label || t(locale, "previewPanel")}
       />
 
@@ -214,9 +280,9 @@ export function PreviewPanel({
                     },
                   },
                   {
-                    label: t(locale, "copy"),
+                    label: t(locale, "editAttributes"),
                     onClick: () => {
-                      onContextMenuAction?.("copy", menuData.nodeId);
+                      onContextMenuAction?.("editAttributes", menuData.nodeId ?? undefined);
                       closeContextMenu();
                     },
                   },

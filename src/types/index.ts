@@ -33,7 +33,6 @@ export type EventMap = {
   /** 用户点击了预览面板中的某个节点 */
   "preview:click": { nodeId: string };
   /** 在隔离预览文档自身触发打印，避免主窗口 iframe 截断。 */
-  "preview:print": undefined;
   /** Monaco 光标位置发生变化 */
   "source:cursorChange": { line: number; col: number; offset: number };
   /** 需要在 Monaco 中高亮某个源码范围 */

@@ -5,9 +5,11 @@ import {
   buildDocumentOutline,
   countOutlineItems,
   findNodeTrail,
+  flattenOutline,
   isUsableHtmlClipboard,
   normalizeHtmlClipboard,
 } from "./document-structure.ts";
+import type { OutlineItem } from "@ainx/hylo-core";
 
 const location: SourceLocation = {
   startLine: 1,
@@ -85,4 +87,52 @@ test("normalizeHtmlClipboard removes an AI chat markdown fence without changing 
     "<!doctype html>\n<main>Hello</main>",
   );
   assert.equal(normalizeHtmlClipboard("  <section>Ready</section>  "), "<section>Ready</section>");
+});
+
+test("flattenOutline produces visible rows with depth and respects collapse", () => {
+  const items: OutlineItem[] = [
+    {
+      nodeId: "a",
+      tagName: "main",
+      detail: "",
+      children: [
+        {
+          nodeId: "b",
+          tagName: "section",
+          detail: "",
+          children: [{ nodeId: "c", tagName: "p", detail: "", children: [] }],
+        },
+        { nodeId: "d", tagName: "div", detail: "", children: [] },
+      ],
+    },
+  ];
+
+  const expanded = flattenOutline(items, new Set());
+  assert.deepEqual(
+    expanded.map((row) => [row.item.nodeId, row.depth]),
+    [
+      ["a", 0],
+      ["b", 1],
+      ["c", 2],
+      ["d", 1],
+    ],
+  );
+  assert.equal(expanded[0].hasChildren, true);
+
+  const collapsed = flattenOutline(items, new Set(["b"]));
+  assert.deepEqual(
+    collapsed.map((row) => row.item.nodeId),
+    ["a", "b", "d"],
+  );
+  assert.equal(collapsed[1].collapsed, true);
+});
+
+test("flattenOutline scales to large documents", () => {
+  const items: OutlineItem[] = Array.from({ length: 5000 }, (_, index) => ({
+    nodeId: `node-${index}`,
+    tagName: "p",
+    detail: "",
+    children: [],
+  }));
+  assert.equal(flattenOutline(items, new Set()).length, 5000);
 });

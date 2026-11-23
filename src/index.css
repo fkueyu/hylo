@@ -117,35 +117,33 @@ body {
   overflow: hidden;
 }
 
-/* ── 标题栏 ─────────────────────────────────────────────── */
+/* ── 标题栏（单一定义，避免重复块互相覆盖） ─────────────── */
 .app-titlebar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: var(--titlebar-height);
-  padding: 0 12px;
-  background: var(--color-bg-panel-header);
+  padding: 0 14px;
+  background:
+    linear-gradient(90deg, rgba(117, 111, 242, 0.05), transparent 28%),
+    var(--color-bg);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
-  gap: 8px;
+  gap: 18px;
   position: relative;
   user-select: none;
   -webkit-app-region: drag;
 }
 
 .app-titlebar.app-titlebar--mac {
-  padding-left: 80px;
-}
-
-.app-titlebar.app-titlebar--mac .app-titlebar__left {
-  transform: translateY(-2.5px);
+  padding-left: 82px;
 }
 
 /* 左区：品牌 */
 .app-titlebar__left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   min-width: 0;
   flex: 0 0 auto;
   position: relative;
@@ -153,31 +151,32 @@ body {
   -webkit-app-region: no-drag;
 }
 
+.app-titlebar__brandmark {
+  width: 19px;
+  height: 19px;
+  display: block;
+  object-fit: contain;
+  user-select: none;
+}
+
 .app-titlebar__title-group {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   min-width: 0;
-  margin-top: 1px; /* 字体渲染微调：文字整体向下修正 1px，使其与 logo 正中心完美相交 */
-}
-
-.app-titlebar__logo {
-  font-size: 15px;
-  color: var(--color-accent);
-  filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.6));
-  line-height: 1;
 }
 
 .app-titlebar__name {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 650;
   color: var(--color-text-primary);
-  letter-spacing: -0.01em;
+  letter-spacing: 0.01em;
   line-height: 1;
 }
 
 .app-titlebar__sep {
   color: var(--color-text-muted);
+  opacity: 0.55;
   font-size: 12px;
   line-height: 1;
   position: relative;
@@ -185,9 +184,10 @@ body {
 }
 
 .app-titlebar__filename {
-  font-size: 12px;
+  max-width: min(32vw, 420px);
   color: var(--color-text-secondary);
-  max-width: 200px;
+  cursor: default;
+  font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -198,7 +198,7 @@ body {
 .app-titlebar__right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 7px;
   flex: 0 0 auto;
   -webkit-app-region: no-drag;
   position: relative;
@@ -213,7 +213,9 @@ body {
 }
 
 .app-titlebar__stats {
-  font-size: 11px;
+  padding: 0 5px;
+  font-size: 10px;
+  letter-spacing: 0.015em;
   font-family: var(--font-mono);
   color: var(--color-text-muted);
   white-space: nowrap;
@@ -893,67 +895,6 @@ button:focus-visible,
   outline-offset: 2px;
 }
 
-.app-titlebar {
-  padding: 0 14px;
-  background:
-    linear-gradient(90deg, rgba(117, 111, 242, 0.05), transparent 28%),
-    var(--color-bg);
-  border-bottom-color: var(--color-border);
-  gap: 18px;
-}
-
-.app-titlebar.app-titlebar--mac {
-  padding-left: 82px;
-}
-
-.app-titlebar.app-titlebar--mac .app-titlebar__left {
-  transform: none;
-}
-
-.app-titlebar__left {
-  gap: 9px;
-}
-
-.app-titlebar__brandmark {
-  width: 19px;
-  height: 19px;
-  display: block;
-  object-fit: contain;
-  user-select: none;
-}
-
-.app-titlebar__title-group {
-  gap: 7px;
-  margin-top: 0;
-}
-
-.app-titlebar__name {
-  font-size: 13px;
-  font-weight: 650;
-  letter-spacing: 0.01em;
-}
-
-.app-titlebar__sep {
-  color: var(--color-text-muted);
-  opacity: 0.55;
-}
-
-.app-titlebar__filename {
-  max-width: min(32vw, 420px);
-  color: var(--color-text-secondary);
-  cursor: default;
-}
-
-.app-titlebar__right {
-  gap: 7px;
-}
-
-.app-titlebar__stats {
-  padding: 0 5px;
-  font-size: 10px;
-  letter-spacing: 0.015em;
-  color: var(--color-text-muted);
-}
 
 .toolbar-btn {
   height: 28px;
@@ -1149,7 +1090,17 @@ body.theme-light .layout-switcher__btn.active {
   flex: 1;
   min-height: 0;
   padding: 8px 6px 16px;
+  overflow: hidden;
+}
+
+/* 虚拟化列表：只有视口附近的行会真正渲染 */
+.document-outline__viewport {
+  height: 100%;
   overflow: auto;
+}
+
+.outline-node {
+  box-sizing: border-box;
 }
 
 .document-outline__tree,
@@ -1604,4 +1555,303 @@ body.theme-light .toolbar-btn--primary {
     box-shadow: none !important;
   }
 
+}
+
+/* 本地 Monaco chunk 加载前的占位（不再依赖 CDN） */
+.monaco-panel__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* ────────────────────────────────────────────────────────────
+   PDF / 系统打印样式
+   打印时只输出预览文档：隐藏标题栏、源码面板、结构树与所有装饰，
+   预览 iframe 在打印期间由 PreviewPanel 按真实内容高度内联展开，
+   这样长文档可以完整分页而不会被截断。
+   ──────────────────────────────────────────────────────────── */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  .app-titlebar,
+  .source-workspace,
+  .split-panel--left,
+  .split-divider,
+  .preview-panel__header,
+  .preview-panel__empty,
+  .selection-trail,
+  .context-menu,
+  .dropdown-menu {
+    display: none !important;
+  }
+
+  .app,
+  .app-main,
+  .split-view,
+  .split-panel,
+  .split-panel--right,
+  .preview-panel {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    flex: none !important;
+    background: #fff !important;
+  }
+
+  .preview-panel__content {
+    display: block !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    border: 0 !important;
+    background: #fff !important;
+  }
+}
+
+/* 粘贴 HTML 三选一弹窗 */
+.paste-modal {
+  width: min(720px, 88vw);
+}
+
+.paste-modal__snippet {
+  margin-top: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.paste-modal__snippet-label {
+  padding: 6px 10px;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+  background: var(--color-bg-panel-header);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.paste-modal__snippet pre {
+  margin: 0;
+  padding: 10px;
+  max-height: 220px;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.paste-modal__footer {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 节点属性快速编辑弹窗 */
+.attributes-modal {
+  width: min(640px, 88vw);
+}
+
+.attributes-modal__head,
+.attributes-modal__row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(160px, 1.6fr) 28px;
+  gap: 8px;
+  align-items: center;
+}
+
+.attributes-modal__head {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  padding: 0 2px 6px;
+}
+
+.attributes-modal__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.attributes-modal__input {
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-input, rgba(255, 255, 255, 0.04));
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.attributes-modal__remove {
+  height: 30px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.attributes-modal__remove:hover {
+  color: #ff5f56;
+  border-color: rgba(255, 95, 86, 0.4);
+}
+
+.attributes-modal__empty {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  margin: 4px 2px 8px;
+}
+
+.attributes-modal__error {
+  margin: 8px 0 0;
+  color: #ff5f56;
+  font-size: 11px;
+}
+
+.attributes-modal__add {
+  margin-top: 10px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.attributes-modal__footer {
+  justify-content: flex-end;
+}
+
+/* 预览诊断徽标（安全预览拦截了脚本/远程资源时提示） */
+.preview-panel__diagnostics {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border: 1px solid rgba(255, 159, 10, 0.4);
+  border-radius: 999px;
+  background: rgba(255, 159, 10, 0.12);
+  color: #d18b00;
+  font-size: 10px;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.preview-panel__diagnostics:hover {
+  background: rgba(255, 159, 10, 0.2);
+}
+
+/* 文档审阅弹窗 */
+.audit-modal {
+  width: min(680px, 90vw);
+}
+
+.audit-modal__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.audit-modal__chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 159, 10, 0.12);
+  border: 1px solid rgba(255, 159, 10, 0.3);
+  color: var(--color-text-secondary);
+  font-size: 10px;
+}
+
+.audit-modal__clean {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin: 4px 0;
+}
+
+.audit-modal__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 380px;
+  overflow: auto;
+}
+
+.audit-modal__finding {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.audit-modal__finding:hover {
+  background: var(--color-accent-dim);
+  border-color: var(--color-border);
+}
+
+.audit-modal__dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.audit-modal__finding--warning .audit-modal__dot {
+  background: #ff9f0a;
+}
+
+.audit-modal__footer {
+  justify-content: flex-end;
+}
+
+/* 工具栏图标按钮上的计数徽标（如审阅问题数） */
+.toolbar-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ff9f0a;
+  color: #1a1a2e;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+}
+
+.toolbar-btn {
+  position: relative;
 }

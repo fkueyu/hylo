@@ -2,7 +2,9 @@
 // HistoryModal.tsx — 历史记录弹窗组件
 // ============================================================
 
+import { useEffect } from "react";
 import { readTextFile } from "@tauri-apps/plugin-fs";
+import { allowFileAccess } from "@/core/system-file";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { t, Locale } from "../i18n";
 import { HistoryItem } from "../hooks/useHistory";
@@ -26,10 +28,20 @@ export function HistoryModal({
   onClear,
   onRemove,
 }: HistoryModalProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleItemClick = async (item: HistoryItem) => {
     try {
+      await allowFileAccess(item.path).catch(() => {});
       const content = await readTextFile(item.path);
       onFileLoaded(content, item.name, item.path);
       onClose();
@@ -62,7 +74,13 @@ export function HistoryModal({
 
   return (
     <div className="update-overlay" onClick={onClose}>
-      <div className="update-modal history-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="update-modal history-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t(locale, "historyTitle")}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="update-modal__header">
           <span className="update-modal__icon">🕒</span>
           <span className="update-modal__title">{t(locale, "historyTitle")}</span>

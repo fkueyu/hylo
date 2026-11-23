@@ -12,9 +12,11 @@ export interface UpdateModalRef {
 
 interface UpdateModalProps {
   locale: Locale;
+  /** 更新安装完成、重启前调用：返回 false 表示用户取消（例如选择先保存文件） */
+  onBeforeRestart?: () => Promise<boolean>;
 }
 
-export const UpdateModal = forwardRef<UpdateModalRef, UpdateModalProps>(({ locale }, ref) => {
+export const UpdateModal = forwardRef<UpdateModalRef, UpdateModalProps>(({ locale, onBeforeRestart }, ref) => {
   const isMac = typeof window !== "undefined" && navigator.userAgent.includes("Mac");
   const [isOpen, setIsOpen] = useState(false);
   const [status, setStatus] = useState<
@@ -97,9 +99,11 @@ export const UpdateModal = forwardRef<UpdateModalRef, UpdateModalProps>(({ local
       });
 
       setStatus("success");
-      // 成功后自动重启应用
+      // 成功后自动重启应用；重启同样要走未保存修改确认，避免静默丢改动
       setTimeout(async () => {
         try {
+          const canRestart = (await onBeforeRestart?.()) ?? true;
+          if (!canRestart) return;
           await relaunch();
         } catch (e) {
           console.error("Failed to relaunch app", e);
@@ -125,11 +129,26 @@ export const UpdateModal = forwardRef<UpdateModalRef, UpdateModalProps>(({ local
     }, 200);
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") handleClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  });
+
   if (!isOpen) return null;
 
   return (
     <div className="update-overlay" onClick={handleClose}>
-      <div className="update-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="update-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t(locale, "updateTitle")}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="update-modal__header">
           <span className="update-modal__icon">✨</span>
           <span className="update-modal__title">{t(locale, "updateTitle")}</span>
@@ -181,17 +200,13 @@ export const UpdateModal = forwardRef<UpdateModalRef, UpdateModalProps>(({ local
                   lineHeight: "1.5",
                   color: "#00b080" 
                 }}>
-                  {locale === "zh" ? (
-                    <>💡 推荐 macOS 用户前往 <strong>Mac App Store</strong> 下载安装全新上架的正版客户端，可支持完整的多语言原生系统菜单并享受更安全稳定的沙盒环境。</>
-                  ) : (
-                    <>💡 We highly recommend macOS users install via the <strong>Mac App Store</strong> to experience the fully localized native menus and a secure sandboxed environment.</>
-                  )}
+                  {t(locale, "updateAppStoreNote")}
                 </div>
               )}
 
               {updateInfo.body && (
                 <div style={{ marginTop: "12px" }}>
-                  <div style={{ marginBottom: "6px", fontSize: "11px", fontWeight: 500 }}>RELEASE NOTES:</div>
+                  <div style={{ marginBottom: "6px", fontSize: "11px", fontWeight: 500 }}>{t(locale, "updateReleaseNotes")}</div>
                   <div className="update-modal__notes">{updateInfo.body}</div>
                 </div>
               )}
@@ -234,7 +249,7 @@ export const UpdateModal = forwardRef<UpdateModalRef, UpdateModalProps>(({ local
                     handleClose();
                   }}
                 >
-                  {locale === "zh" ? "前往 App Store" : "App Store"}
+                  {t(locale, "updateAppStoreCta")}
                 </button>
               )}
               <button className="update-modal__btn update-modal__btn--primary" onClick={handleStartUpdate}>

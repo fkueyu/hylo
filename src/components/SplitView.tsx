@@ -31,20 +31,30 @@ export function SplitView({
   const isDragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  const endDrag = useCallback(() => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    setDragging(false);
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+  }, []);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
     isDragging.current = true;
     setDragging(true);
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
   }, []);
 
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
+  const handlePointerMove = useCallback(
+    (e: PointerEvent) => {
       if (!isDragging.current || !containerRef.current) return;
 
       const rect = containerRef.current.getBoundingClientRect();
       const totalWidth = rect.width;
+      if (totalWidth <= 0) return;
       const relativeX = e.clientX - rect.left;
 
       const minRatio = minPanelWidth / totalWidth;
@@ -56,22 +66,21 @@ export function SplitView({
     [minPanelWidth]
   );
 
-  const handleMouseUp = useCallback(() => {
-    if (!isDragging.current) return;
-    isDragging.current = false;
-    setDragging(false);
-    document.body.style.cursor = "";
-    document.body.style.userSelect = "";
-  }, []);
-
   useEffect(() => {
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    // Pointer Events + capture：即使鼠标移出窗口/松开在窗外也能正确结束拖拽
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+    window.addEventListener("blur", endDrag);
+    document.addEventListener("visibilitychange", endDrag);
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", endDrag);
+      window.removeEventListener("pointercancel", endDrag);
+      window.removeEventListener("blur", endDrag);
+      document.removeEventListener("visibilitychange", endDrag);
     };
-  }, [handleMouseMove, handleMouseUp]);
+  }, [handlePointerMove, endDrag]);
 
   const isEditorOnly = layoutMode === "editor";
   const isPreviewOnly = layoutMode === "preview";
@@ -101,7 +110,7 @@ export function SplitView({
       {!isEditorOnly && !isPreviewOnly && (
         <div
           className="split-divider"
-          onMouseDown={handleMouseDown}
+          onPointerDown={handlePointerDown}
           role="separator"
           aria-orientation="vertical"
           tabIndex={0}

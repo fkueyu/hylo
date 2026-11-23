@@ -36,3 +36,9 @@ src-tauri/embedded.provisionprofile
 
 # Antigravity CLI
 .antigravitycli/
+
+# VS Code extension is a separate product/repo (not part of the desktop app)
+hylo-vscode/
+
+# Local scratch fixtures (kept on disk, not in the repo)
+test_images/

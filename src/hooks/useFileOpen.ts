@@ -5,6 +5,7 @@
 import { useCallback } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { readTextFile } from "@tauri-apps/plugin-fs";
+import { allowFileAccess } from "@/core/system-file";
 import type { Locale } from "@/i18n";
 import { t } from "@/i18n";
 
@@ -35,7 +36,10 @@ export function useFileOpen({ locale, onFileLoaded, onError }: UseFileOpenOption
 
       if (!selected || typeof selected !== "string") return;
 
-      // 读取文件内容
+      // 对话框插件只授予 fs scope；相对路径图片还需要 asset 协议 scope
+      await allowFileAccess(selected).catch((error) => {
+        console.warn("[useFileOpen] failed to grant asset scope:", error);
+      });
       const content = await readTextFile(selected);
 
       // 提取文件名（不含路径）
@@ -44,7 +48,7 @@ export function useFileOpen({ locale, onFileLoaded, onError }: UseFileOpenOption
       onFileLoaded(content, filename, selected);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      onError?.(`${t(locale, "fileReadError")}: ${msg}`);
+      onError?.(msg);
       console.error("[useFileOpen]", err);
     }
   }, [locale, onFileLoaded, onError]);
