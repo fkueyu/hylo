@@ -139,13 +139,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          # macOS 签名/公证（缺失时产出未签名包，仅用于内部测试）
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # macOS 签名/公证暂时关闭：仓库 secrets 中的证书无法导入（security import 失败），
+          # 会导致 universal 打包直接失败。产出未签名包；待配置有效的 Developer ID 证书后
+          # 再恢复 APPLE_CERTIFICATE / APPLE_SIGNING_IDENTITY / APPLE_ID 等环境变量。
         with:
           tagName: v__VERSION__
           releaseName: 'Hylo v__VERSION__'
