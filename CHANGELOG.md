@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.21] - 2026-11-22
+## [0.1.22] - 2026-11-23
 
 ### 新增
 - 系统文件关联：Finder 双击 / 右键「打开方式」/ 拖拽 / 命令行参数都能在 Hylo 中打开 `.html`；冷启动与运行中打开都可靠（Rust 侧待打开队列 + 前端 drain）。

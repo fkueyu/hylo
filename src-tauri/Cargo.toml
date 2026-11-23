@@ -1,6 +1,6 @@
 [package]
 name = "tauri-app"
-version = "0.1.21"
+version = "0.1.22"
 description = "Hylo — real-time HTML editor with bi-directional source/preview syncing"
 authors = ["Hylo contributors"]
 license = "MIT"
