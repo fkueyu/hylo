@@ -26,8 +26,15 @@ jobs:
       - name: Install Rust stable
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          cache: true
+          cache: false
           components: rustfmt, clippy
+
+      # Rust 工作区在 src-tauri/ 子目录：必须显式告诉 rust-cache，
+      # 否则缓存动作会在仓库根执行 `cargo metadata` 并失败。
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
 
       - name: Install Linux webview dependencies
         run: |
@@ -101,7 +108,12 @@ jobs:
       - name: Install Rust stable
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          cache: true
+          cache: false
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
 
       - name: Install Rust targets (macOS only)
         if: matrix.platform == 'macos-latest'
